@@ -41,7 +41,7 @@ def snapshotName = null;
 if(branch != null) {
     branch = branch.replace('refs/heads/', '')
 }
-def isRelease = System.getenv("IS_RELEASE") == "true"
+def isRelease = System.getenv("IS_RELEASE") == "true" || (project.hasProperty("isRelease") && project.property("isRelease") == "true") || System.getProperty("isRelease") == "true"
 
 snapshotName = (branch == null || branch.startsWith("release-please")) ? "SNAPSHOT" : branch
 def githubSha = System.getenv("GITHUB_SHA")
