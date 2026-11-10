@@ -13,6 +13,7 @@ import net.minecraftforge.fml.ModLoadingException;
 import net.minecraftforge.fml.ModLoadingStage;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.*;
 
 /**
@@ -22,7 +23,7 @@ import java.util.*;
  */
 public class CapabilitySyncRegistry {
 
-    private static final Map<Class, SyncTrackerSerializer> CLASS_SYNC_TRACKER_SERIALIZER = new HashMap<>();
+    private static final Map<Type, SyncTrackerSerializer> SYNC_TRACKER_SERIALIZER = new HashMap<>();
 
     /**
      * @param capability the capability to process
@@ -39,8 +40,14 @@ public class CapabilitySyncRegistry {
         int trackerId = 0;
         for (Field field : values) {
             Sync sync = field.getAnnotation(Sync.class);
-            if(!CLASS_SYNC_TRACKER_SERIALIZER.containsKey(field.getType())) {
-                String message = String.format("@Sync used on unsupported type %s. (Class: %s, Field: %s)", field.getType().getName(), clazz.getName(), field.getName());
+            Type fieldType = field.getGenericType();
+            SyncTrackerSerializer serializer = SYNC_TRACKER_SERIALIZER.get(fieldType);
+            if (serializer == null) {
+                serializer = SYNC_TRACKER_SERIALIZER.get(field.getType());
+            }
+
+            if(serializer == null) {
+                String message = String.format("@Sync used on unsupported type %s (generic: %s). (Class: %s, Field: %s)", field.getType().getName(), fieldType.getTypeName(), clazz.getName(), field.getName());
                 SekCLib.LOGGER.error(message);
                 errors.add(new ModLoadingException(null, ModLoadingStage.COMMON_SETUP, message, null));
             }
@@ -52,7 +59,7 @@ public class CapabilitySyncRegistry {
                 errors.add(new ModLoadingException(null, ModLoadingStage.COMMON_SETUP, message, null));
             }
             try {
-                SyncEntry entry = new SyncEntry(field.getName(), field, sync.minTicks(), trackerId, sync.syncGlobally(), CLASS_SYNC_TRACKER_SERIALIZER.get(field.getType()));
+                SyncEntry entry = new SyncEntry(field.getName(), field, sync.minTicks(), trackerId, sync.syncGlobally(), serializer);
                 capabilityEntry.addSyncEntry(entry);
                 trackerId++;
             } catch (IllegalAccessException e) {
@@ -66,15 +73,21 @@ public class CapabilitySyncRegistry {
         }
     }
 
+    public static void registerSyncTrackerType(Type type, SyncTrackerSerializer syncTracker) {
+        SYNC_TRACKER_SERIALIZER.put(type, syncTracker);
+    }
+
     public static void registerSyncTrackerType(Class clazz, SyncTrackerSerializer syncTracker) {
-        CLASS_SYNC_TRACKER_SERIALIZER.put(clazz, syncTracker);
+        SYNC_TRACKER_SERIALIZER.put(clazz, syncTracker);
+    }
+
+    public static SyncTrackerSerializer getTrackerSerializer(Type type) {
+        return SYNC_TRACKER_SERIALIZER.get(type);
     }
 
     public static SyncTrackerSerializer getTrackerSerializer(Class clazz) {
-        return CLASS_SYNC_TRACKER_SERIALIZER.get(clazz);
+        return SYNC_TRACKER_SERIALIZER.get(clazz);
     }
-
-
 
     /**
      * @return list of capabilities for syncing later

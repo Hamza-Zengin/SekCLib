@@ -2,10 +2,14 @@ package com.sekwah.sekclib;
 
 import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.implemented.*;
 import io.netty.buffer.Unpooled;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import org.junit.jupiter.api.Test;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -89,5 +93,108 @@ public class SyncTrackerTest {
 
         assertNotNull(decoded);
         assertEquals(loc, decoded);
+    }
+
+    @Test
+    void testCompoundTagSyncTracker() {
+        CompoundTagSyncTracker tracker = new CompoundTagSyncTracker();
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+
+        CompoundTag tag = new CompoundTag();
+        tag.putString("clan", "uchiha");
+        tag.putInt("chakraExp", 1500);
+        tag.putBoolean("awakened", true);
+
+        CompoundTag subTag = new CompoundTag();
+        subTag.putDouble("jutsuDamageMultiplier", 1.5);
+        tag.put("stats", subTag);
+
+        tracker.encode(tag, buf);
+        CompoundTag decoded = tracker.decode(buf);
+
+        assertNotNull(decoded);
+        assertEquals("uchiha", decoded.getString("clan"));
+        assertEquals(1500, decoded.getInt("chakraExp"));
+        assertTrue(decoded.getBoolean("awakened"));
+        assertEquals(1.5, decoded.getCompound("stats").getDouble("jutsuDamageMultiplier"));
+
+        // Test clone
+        CompoundTag cloned = tracker.clone(tag);
+        assertNotNull(cloned);
+        assertNotSame(tag, cloned);
+        assertEquals(tag, cloned);
+
+        // Test null clone
+        assertNull(tracker.clone(null));
+    }
+
+    @Test
+    void testResourceLocationSetSyncTracker() {
+        ResourceLocationSetSyncTracker tracker = new ResourceLocationSetSyncTracker();
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+
+        Set<ResourceLocation> set = new HashSet<>();
+        set.add(new ResourceLocation("narutomod", "rasengan"));
+        set.add(new ResourceLocation("narutomod", "chidori"));
+        set.add(new ResourceLocation("narutomod", "shadow_clone"));
+
+        tracker.encode(set, buf);
+        Set<ResourceLocation> decoded = tracker.decode(buf);
+
+        assertNotNull(decoded);
+        assertEquals(3, decoded.size());
+        assertTrue(decoded.contains(new ResourceLocation("narutomod", "rasengan")));
+        assertTrue(decoded.contains(new ResourceLocation("narutomod", "chidori")));
+        assertTrue(decoded.contains(new ResourceLocation("narutomod", "shadow_clone")));
+
+        // Test clone
+        Set<ResourceLocation> cloned = tracker.clone(set);
+        assertNotNull(cloned);
+        assertNotSame(set, cloned);
+        assertEquals(set, cloned);
+
+        // Test decode bounds check with invalid size
+        FriendlyByteBuf invalidBuf = new FriendlyByteBuf(Unpooled.buffer());
+        invalidBuf.writeInt(-5);
+        assertTrue(tracker.decode(invalidBuf).isEmpty());
+
+        FriendlyByteBuf excessiveBuf = new FriendlyByteBuf(Unpooled.buffer());
+        excessiveBuf.writeInt(9999);
+        assertTrue(tracker.decode(excessiveBuf).isEmpty());
+    }
+
+    @Test
+    void testStringSetSyncTracker() {
+        StringSetSyncTracker tracker = new StringSetSyncTracker();
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+
+        Set<String> set = new HashSet<>();
+        set.add("fire_style");
+        set.add("lightning_blade");
+        set.add("flying_raijin");
+
+        tracker.encode(set, buf);
+        Set<String> decoded = tracker.decode(buf);
+
+        assertNotNull(decoded);
+        assertEquals(3, decoded.size());
+        assertTrue(decoded.contains("fire_style"));
+        assertTrue(decoded.contains("lightning_blade"));
+        assertTrue(decoded.contains("flying_raijin"));
+
+        // Test clone
+        Set<String> cloned = tracker.clone(set);
+        assertNotNull(cloned);
+        assertNotSame(set, cloned);
+        assertEquals(set, cloned);
+
+        // Test decode bounds check
+        FriendlyByteBuf invalidBuf = new FriendlyByteBuf(Unpooled.buffer());
+        invalidBuf.writeInt(-1);
+        assertTrue(tracker.decode(invalidBuf).isEmpty());
+
+        FriendlyByteBuf excessiveBuf = new FriendlyByteBuf(Unpooled.buffer());
+        excessiveBuf.writeInt(1000);
+        assertTrue(tracker.decode(excessiveBuf).isEmpty());
     }
 }
