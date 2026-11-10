@@ -1,7 +1,7 @@
 package com.sekwah.sekclib.util;
 
 import net.minecraft.network.chat.TextColor;
-import java.awt.*;
+import java.awt.Color;
 
 public class ColorUtil {
 
@@ -13,28 +13,38 @@ public class ColorUtil {
      */
     public static Color recalculateHue(float hue, int brightness) {
         double radiansHue = Math.toRadians(hue);
-        int red = (int) (Math.sqrt(Math.cos(radiansHue)+1/2) * 255);
-        int green = (int) (Math.sqrt(Math.cos(radiansHue-(Math.PI+1)/2)+1/2) * 255);
-        int blue = (int) (Math.sqrt(Math.cos(radiansHue+(Math.PI+1)/2)+1/2) * 255);
+        // Note: 0.5D instead of 1/2 (which evaluated to 0 in integer division)
+        // Clamp input to Math.sqrt to prevent NaN from negative cosine
+        double cosR = Math.max(0.0D, Math.cos(radiansHue) + 0.5D);
+        double cosG = Math.max(0.0D, Math.cos(radiansHue - (Math.PI + 1.0D) / 2.0D) + 0.5D);
+        double cosB = Math.max(0.0D, Math.cos(radiansHue + (Math.PI + 1.0D) / 2.0D) + 0.5D);
 
-        if(brightness > 50){
+        int red = (int) (Math.sqrt(cosR) * 255.0D);
+        int green = (int) (Math.sqrt(cosG) * 255.0D);
+        int blue = (int) (Math.sqrt(cosB) * 255.0D);
+
+        if (brightness > 50) {
             float multiValue = (float) (brightness - 50) / 50f;
             red = (int) ((255 - red) * multiValue + red);
             green = (int) ((255 - green) * multiValue + green);
             blue = (int) ((255 - blue) * multiValue + blue);
-        }
-        else if(brightness < 50){
+        } else if (brightness < 50) {
             float multiValue = (float) brightness / 50f;
-            red *= multiValue;
-            green *= multiValue;
-            blue *= multiValue;
+            red = (int) (red * multiValue);
+            green = (int) (green * multiValue);
+            blue = (int) (blue * multiValue);
         }
+
+        // Clamp to valid 0-255 RGB range to prevent IllegalArgumentException
+        red = Math.max(0, Math.min(255, red));
+        green = Math.max(0, Math.min(255, green));
+        blue = Math.max(0, Math.min(255, blue));
 
         return new Color(red, green, blue);
     }
 
     /**
-     * Basically just because i wanted to enable the intellij color picker >:)
+     * Convert java.awt.Color to Minecraft TextColor
      *
      * @param color java.awt.Color
      * @return minecraft TextColor
@@ -43,8 +53,9 @@ public class ColorUtil {
         return TextColor.parseColor(String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue()));
     }
 
-    public int colorToInt(Color color) {
-        return toMCColor(color).getValue();
+    public static int colorToInt(Color color) {
+        TextColor mcColor = toMCColor(color);
+        return mcColor != null ? mcColor.getValue() : (color.getRGB() & 0xFFFFFF);
     }
 
 }

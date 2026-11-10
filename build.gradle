@@ -20,10 +20,10 @@ buildscript {
         //classpath "org.spongepowered:mixingradle:0.7+"
         classpath "org.apache.httpcomponents:httpmime:4.5.14"
         classpath "org.parchmentmc:librarian:1.+"
+        classpath "com.modrinth.minotaur:Minotaur:2.8.7"
     }
 }
 plugins {
-    id "com.modrinth.minotaur" version "2.+"
     id "com.matthewprenger.cursegradle" version "1.4.0"
 }
 
@@ -32,6 +32,7 @@ apply plugin: "java"
 apply plugin: 'eclipse'
 apply plugin: 'org.parchmentmc.librarian.forgegradle'
 apply plugin: 'maven-publish'
+apply plugin: 'com.modrinth.minotaur'
 
 //apply plugin: "org.spongepowered.mixin"
 
@@ -155,12 +156,15 @@ dependencies {
     // Specify the version of Minecraft to use, If this is any group other then 'net.minecraft' it is assumed
     // that the dep is a ForgeGradle 'patcher' dependency. And it's patches will be applied.
     // The userdev artifact is a special name and will get all sorts of transformations applied to it.
-    minecraft 'net.minecraftforge:forge:1.20-46.0.14'
+    minecraft 'net.minecraftforge:forge:1.20.1-47.3.0'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.2'
 
     //implementation 'org.spongepowered:mixin:0.8.5'
     //annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
-    //compile "com.sekwah:SekCLib:${sekclib_version}:deobf"
+    //compile "com.sekwah.SekCLib:${sekclib_version}:deobf"
     // Trick intellij to allow for better editing in here for the discord task
     // compile "org.apache.httpcomponents:httpmime:4.5.13"
     //implementation fg.deobf("curse.maven:torohealth-damage-indicators-245733:3556931")
@@ -181,6 +185,10 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
+}
+
+test {
+    useJUnitPlatform()
 }
 
 // Readd if mixins start being used
@@ -240,15 +248,19 @@ publishing {
         mavenJava(MavenPublication) {
             artifact reobfArtifact
             artifact srcJar
+            artifact deobfJar
         }
     }
     repositories {
         maven {
-            url "s3://sekwah-maven/"
-            authentication {
-                awsIm(AwsImAuthentication)
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/Hamza-Zengin/SekCLib")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR") ?: project.findProperty("gpr.user") ?: ""
+                password = System.getenv("GITHUB_TOKEN") ?: project.findProperty("gpr.key") ?: ""
             }
         }
+        mavenLocal()
     }
 }
 

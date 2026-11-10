@@ -29,7 +29,7 @@ public class CapabilitySyncRegistry {
      * @param clazz so that the fields can be pre-grabbed.
      */
     @SuppressWarnings("squid:S3011")
-    static void registerPlayerCap(ResourceLocation resourceSyncName, Capability<?> capability, Class<?> clazz) {
+    public static void registerPlayerCap(ResourceLocation resourceSyncName, Capability<?> capability, Class<?> clazz) {
         List<Field> values = Arrays.stream(clazz.getDeclaredFields())
                 .filter(value -> value.isAnnotationPresent(Sync.class))
                 .sorted(Comparator.comparing(Field::getName)).toList();
@@ -66,7 +66,7 @@ public class CapabilitySyncRegistry {
         }
     }
 
-    static void registerSyncTrackerType(Class clazz, SyncTrackerSerializer syncTracker) {
+    public static void registerSyncTrackerType(Class clazz, SyncTrackerSerializer syncTracker) {
         CLASS_SYNC_TRACKER_SERIALIZER.put(clazz, syncTracker);
     }
 

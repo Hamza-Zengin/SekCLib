@@ -18,6 +18,7 @@ import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -79,14 +80,21 @@ public class ClientCapabilitySyncPacket {
      */
     public static List<ISyncTrackerData> decodeSyncTrackers(CapabilityEntry capability, FriendlyByteBuf inBuffer) {
         int trackerCount = inBuffer.readInt();
+        if (trackerCount < 0 || trackerCount > 256) {
+            SekCLib.LOGGER.warn("Received invalid tracker count: {}", trackerCount);
+            return Collections.emptyList();
+        }
         List<ISyncTrackerData> syncTrackerDataList = new ArrayList<>();
         for (int i = 0; i < trackerCount; i++) {
             int trackerId = inBuffer.readByte();
             boolean hasData = inBuffer.readBoolean();
+            if (capability == null || trackerId < 0 || trackerId >= capability.getSyncEntries().size()) {
+                SekCLib.LOGGER.warn("Invalid tracker id: {} for capability", trackerId);
+                break;
+            }
             SyncEntry tracker = capability.getSyncEntries().get(trackerId);
             Object data = hasData ? tracker.getSerializer().decode(inBuffer) : null;
             syncTrackerDataList.add(new SyncTrackerData(tracker, data));
-
         }
         return syncTrackerDataList;
     }
@@ -109,10 +117,18 @@ public class ClientCapabilitySyncPacket {
 
         int playerId = inBuffer.readInt();
         int capCount = inBuffer.readInt();
+        if (capCount < 0 || capCount > 256) {
+            SekCLib.LOGGER.warn("Received invalid capability count: {}", capCount);
+            return new ClientCapabilitySyncPacket(playerId, Collections.emptyList());
+        }
         List<CapabilityInfo> capabilityInfoList = new ArrayList<>();
         for (int i = 0; i < capCount; i++) {
             int capId = inBuffer.readInt();
             CapabilityEntry capability = SekCLibRegistries.CAPABILITY_REGISTRY.getValue(capId);
+            if (capability == null) {
+                SekCLib.LOGGER.warn("Received capability sync packet for unregistered capability id: {}", capId);
+                break;
+            }
             List<ISyncTrackerData> syncTrackers = decodeSyncTrackers(capability, inBuffer);
             if (!syncTrackers.isEmpty()) {
                 CapabilityInfo capInfo = new CapabilityInfo(capId, capability);
@@ -130,13 +146,23 @@ public class ClientCapabilitySyncPacket {
             context.enqueueWork(() ->
                 DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
                     ClientLevel level = Minecraft.getInstance().level;
+                    if (level == null) {
+                        return;
+                    }
                     Entity entity = level.getEntity(msg.entityId);
                     if (entity instanceof LivingEntity livingEntity) {
                         for (CapabilityInfo capInfo : msg.capabilityData) {
+                            if (capInfo.capability == null || capInfo.capability.getCapability() == null) {
+                                continue;
+                            }
                             livingEntity.getCapability(capInfo.capability.getCapability()).ifPresent(targetCap -> {
                                 List<SyncEntry> syncEntries = capInfo.capability.getSyncEntries();
                                 for (ISyncTrackerData syncTrackerData : capInfo.changedEntries) {
-                                    SyncEntry syncEntry = syncEntries.get(syncTrackerData.getSyncEntry().getTrackerId());
+                                    int trackerId = syncTrackerData.getSyncEntry().getTrackerId();
+                                    if (trackerId < 0 || trackerId >= syncEntries.size()) {
+                                        continue;
+                                    }
+                                    SyncEntry syncEntry = syncEntries.get(trackerId);
                                     try {
                                         Object syncValue = syncTrackerData.getSendValue();
                                         if(syncTrackerData.getSyncEntry().getSerializer() instanceof SyncTrackerUpdater updater)   {

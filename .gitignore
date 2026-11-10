@@ -11,3 +11,7 @@ out/
 \classes/
 run/
 build/
+
+# Logs
+logs/
+*.log
