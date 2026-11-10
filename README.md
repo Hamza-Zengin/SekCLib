@@ -92,6 +92,14 @@ Color vibrant = ColorUtil.recalculateHue(180f, 65);
 int mcColorInt = ColorUtil.colorToInt(vibrant);
 ```
 
+### 6. Humanoid Model & Box Utilities
+Transfer humanoid model rotations and orientations cleanly across custom entity and armor layers without manual trigonometry:
+```java
+import com.sekwah.sekclib.util.ModelUtils;
+
+ModelUtils.copyHumanoidModelAngle(basePlayerModel, customArmorModel);
+```
+
 ---
 
 ## 🚀 Adding SekCLib as a Dependency
@@ -140,6 +148,7 @@ dependencies {
 - **Packet Validation**: `ClientCapabilitySyncPacket` enforces bounds checks on tracker and capability counts, mitigating corrupted packets or malformed network injections.
 - **Null Safety**: Client packets safely discard payloads if the client world is unloading or unmapped capabilities are received.
 - **Throttling**: The `minTicks` property on `@Sync` protects against packet flooding on high-frequency capability mutations.
+- **Performance Optimized**: Client-side tick overhead for non-player entities is bypassed completely, and capability lookups on server are strictly gated to eliminate unneeded iterations.
 
 ---
 
