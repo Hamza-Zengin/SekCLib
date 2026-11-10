@@ -13,6 +13,8 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.capabilities.Capability;
 
+import net.minecraftforge.network.PacketDistributor;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -94,16 +96,30 @@ public class CapabilityBroadcaster {
             return;
         }
 
-        if(entity instanceof ServerPlayer serverPlayer) { {
+        boolean hasPrivate = false;
+        for (CapabilityInfo info : dataToSend) {
+            if (!info.changedPrivateEntries.isEmpty()) {
+                hasPrivate = true;
+                break;
+            }
+        }
+
+        // If there are private entries, send full bundle to self, and global bundle to tracking
+        if (hasPrivate && entity instanceof ServerPlayer serverPlayer) {
             ClientCapabilitySyncPacket selfData = new ClientCapabilitySyncPacket(entity, dataToSend, true);
-            if(!selfData.capabilityData.isEmpty()) {
+            if (!selfData.capabilityData.isEmpty()) {
                 SekCPacketHandler.sendToPlayer(selfData, serverPlayer);
             }
-        }}
-
-        ClientCapabilitySyncPacket forOthers = new ClientCapabilitySyncPacket(entity, dataToSend, false);
-        if(!forOthers.capabilityData.isEmpty()) {
-            SekCPacketHandler.sendToTracking(forOthers, entity);
+            ClientCapabilitySyncPacket forOthers = new ClientCapabilitySyncPacket(entity, dataToSend, false);
+            if (!forOthers.capabilityData.isEmpty()) {
+                SekCPacketHandler.sendToTracking(forOthers, entity);
+            }
+        } else {
+            // When only globally visible capabilities change, send a single packet to TRACKING_ENTITY_AND_SELF
+            ClientCapabilitySyncPacket packet = new ClientCapabilitySyncPacket(entity, dataToSend, false);
+            if (!packet.capabilityData.isEmpty()) {
+                SekCPacketHandler.SYNC_CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity), packet);
+            }
         }
 
     }

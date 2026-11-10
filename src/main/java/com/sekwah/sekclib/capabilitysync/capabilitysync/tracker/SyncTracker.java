@@ -69,7 +69,11 @@ public class SyncTracker implements ISyncTrackerData {
      * @param currentValue - The current server side value
      * @return
      */
+    @SuppressWarnings("unchecked")
     protected boolean shouldSend(Object currentValue) {
+        if (this.syncEntry != null && this.syncEntry.getSerializer() != null) {
+            return this.syncEntry.getSerializer().shouldSend(currentValue, this.sendValue);
+        }
         return !Objects.equals(this.sendValue, currentValue);
     }
 

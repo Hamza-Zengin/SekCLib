@@ -38,4 +38,7 @@ public class SekCPacketHandler {
         SYNC_CHANNEL.send(PacketDistributor.TRACKING_ENTITY.with(() -> player), obj);
     }
 
+    public static void sendToTrackingAndSelf(Object obj, LivingEntity player) {
+        SYNC_CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), obj);
+    }
 }

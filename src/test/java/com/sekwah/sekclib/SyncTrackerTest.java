@@ -34,6 +34,34 @@ public class SyncTrackerTest {
 
         tracker.encode(3.14159f, buf);
         assertEquals(3.14159f, tracker.decode(buf), 0.0001f);
+
+        // Verify epsilon delta sync (MIN_SYNC_DIFF = 0.1f)
+        assertEquals(0.1f, FloatSyncTracker.MIN_SYNC_DIFF, 0.0001f);
+
+        // Initial sync when sendValue is null
+        assertTrue(tracker.shouldSend(10.0f, null));
+
+        // Exact equal values should not be sent
+        assertFalse(tracker.shouldSend(10.0f, 10.0f));
+
+        // Changes below MIN_SYNC_DIFF threshold (diff = 0.05f < 0.1f) should NOT trigger sync
+        assertFalse(tracker.shouldSend(10.05f, 10.0f));
+        assertFalse(tracker.shouldSend(9.95f, 10.0f));
+
+        // Changes at or exceeding MIN_SYNC_DIFF threshold should trigger sync
+        assertTrue(tracker.shouldSend(10.1f, 10.0f));
+        assertTrue(tracker.shouldSend(10.25f, 10.0f));
+        assertTrue(tracker.shouldSend(9.85f, 10.0f));
+
+        // Critical min boundary condition (e.g. chakra / stamina depleted to 0.0f):
+        // Even if diff is small (0.05f < 0.1f), reaching 0.0f boundary MUST trigger sync
+        assertTrue(tracker.shouldSend(0.0f, 0.05f));
+        assertFalse(tracker.shouldSend(0.0f, 0.0f));
+
+        // Custom bounds (min = 0.0f, max = 100.0f)
+        FloatSyncTracker boundedTracker = new FloatSyncTracker(0.0f, 100.0f);
+        assertTrue(boundedTracker.shouldSend(100.0f, 99.95f)); // Reaching max boundary
+        assertFalse(boundedTracker.shouldSend(50.05f, 50.0f));  // Mid-range change below threshold
     }
 
     @Test
