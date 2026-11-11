@@ -17,22 +17,21 @@ buildscript {
     }
     dependencies {
         classpath(group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '6.0.+', changing: true)
-        //classpath "org.spongepowered:mixingradle:0.7+"
-        classpath "org.apache.httpcomponents:httpmime:4.5.14"
-        classpath "org.parchmentmc:librarian:1.+"
-        classpath "com.modrinth.minotaur:Minotaur:2.8.7"
+        classpath "org.apache.httpcomponents:httpmime:4.5.13"
+        //classpath "org.parchmentmc:librarian:1.+"
+        //classpath "com.modrinth.minotaur:Minotaur:2.8.7"
     }
 }
-plugins {
-    id "com.matthewprenger.cursegradle" version "1.4.0"
-}
+//plugins {
+//    id "com.matthewprenger.cursegradle" version "1.4.0"
+//}
 
 apply plugin: 'net.minecraftforge.gradle'
 apply plugin: "java"
 apply plugin: 'eclipse'
-apply plugin: 'org.parchmentmc.librarian.forgegradle'
+//apply plugin: 'org.parchmentmc.librarian.forgegradle'
 apply plugin: 'maven-publish'
-apply plugin: 'com.modrinth.minotaur'
+//apply plugin: 'com.modrinth.minotaur'
 
 //apply plugin: "org.spongepowered.mixin"
 
@@ -314,37 +313,41 @@ task discordupload {
     }
 }
 
-tasks.curseforge.enabled = System.getenv("CURSE_API") != null
+if (plugins.hasPlugin("com.matthewprenger.cursegradle")) {
+    tasks.curseforge.enabled = System.getenv("CURSE_API") != null
 
-curseforge {
-    logger.info("Curse api: " + System.getenv("CURSE_API"))
-    if (System.getenv("CURSE_API") != null) {
-        apiKey = System.getenv("CURSE_API")
-    }
-    project {
-        id = project.curse_project_id
-        // TODO add code to reference this but also cut the latest change logs in for the files
-        changelog = getReleaseChangelog()
-        changelogType = 'markdown'
-        releaseType = 'release'
-        addGameVersion '1.20'
-        addGameVersion '1.20.1'
-
-        mainArtifact(jar){
-
+    curseforge {
+        logger.info("Curse api: " + System.getenv("CURSE_API"))
+        if (System.getenv("CURSE_API") != null) {
+            apiKey = System.getenv("CURSE_API")
         }
-        addArtifact srcJar
-        addArtifact deobfJar
+        project {
+            id = project.curse_project_id
+            // TODO add code to reference this but also cut the latest change logs in for the files
+            changelog = getReleaseChangelog()
+            changelogType = 'markdown'
+            releaseType = 'release'
+            addGameVersion '1.20'
+            addGameVersion '1.20.1'
+
+            mainArtifact(jar){
+
+            }
+            addArtifact srcJar
+            addArtifact deobfJar
+        }
     }
 }
 
 // https://github.com/modrinth/minotaur
-modrinth {
-    token = System.getenv("MODRINTH_TOKEN")
-    projectId = project.modrinth_slug
-    versionType = "release"
-    uploadFile = jar
-    additionalFiles = [srcJar, deobfJar]
-    gameVersions = ["1.20", "1.20.1"]
-    changelog = getReleaseChangelog()
+if (plugins.hasPlugin("com.modrinth.minotaur")) {
+    modrinth {
+        token = System.getenv("MODRINTH_TOKEN")
+        projectId = project.modrinth_slug
+        versionType = "release"
+        uploadFile = jar
+        additionalFiles = [srcJar, deobfJar]
+        gameVersions = ["1.20", "1.20.1"]
+        changelog = getReleaseChangelog()
+    }
 }
