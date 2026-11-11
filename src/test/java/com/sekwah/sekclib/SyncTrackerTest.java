@@ -225,4 +225,12 @@ public class SyncTrackerTest {
         excessiveBuf.writeInt(1000);
         assertTrue(tracker.decode(excessiveBuf).isEmpty());
     }
+
+    @Test
+    void testSyncTrackerDataLiveValue() {
+        com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.SyncTrackerData liveTrackerData =
+                new com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.SyncTrackerData(null, "active_live_data");
+        assertNotNull(liveTrackerData.getSendValue());
+        assertEquals("active_live_data", liveTrackerData.getSendValue());
+    }
 }

@@ -2,9 +2,12 @@ package com.sekwah.sekclib.capabilitysync.capabilitysync.broadcaster;
 
 import com.sekwah.sekclib.SekCLib;
 import com.sekwah.sekclib.capabilitysync.CapabilityEntry;
+import com.sekwah.sekclib.capabilitysync.SyncEntry;
 import com.sekwah.sekclib.capabilitysync.capability.SyncDataCapabilityHandler;
 import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.CapabilityTracker;
+import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.ISyncTrackerData;
 import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.SyncTracker;
+import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.SyncTrackerData;
 import com.sekwah.sekclib.network.SekCPacketHandler;
 import com.sekwah.sekclib.network.s2c.ClientCapabilitySyncPacket;
 import com.sekwah.sekclib.registries.SekCLibRegistries;
@@ -54,17 +57,40 @@ public class CapabilityBroadcaster {
             List<CapabilityTracker> capTrackers = syncData.getCapabilityTrackers();
             for (CapabilityTracker capTracker : capTrackers) {
                 CapabilityEntry capEntry = capTracker.getCapabilityEntry();
+                Capability<?> cap = capTracker.getCapability();
                 CapabilityInfo capInfo = new CapabilityInfo(SekCLibRegistries.CAPABILITY_REGISTRY.getID(capEntry), capEntry);
-                for (SyncTracker syncTracker : capTracker.getSyncTrackers()) {
-                    if ((returnAll || syncTracker.isMarkedForSend())) {
-                        if(syncTracker.getSyncEntry().isSyncGlobally()) {
-                            capInfo.changedEntries.add(syncTracker);
-                        } else {
-                            capInfo.changedPrivateEntries.add(syncTracker);
+
+                if (returnAll && cap != null && entity.getCapability(cap).isPresent()) {
+                    entity.getCapability(cap).ifPresent(data -> {
+                        for (SyncTracker syncTracker : capTracker.getSyncTrackers()) {
+                            SyncEntry syncEntry = syncTracker.getSyncEntry();
+                            Object liveValue;
+                            try {
+                                liveValue = syncEntry.getGetter().invoke(data);
+                            } catch (Throwable t) {
+                                liveValue = syncTracker.getSendValue();
+                            }
+                            ISyncTrackerData trackerData = new SyncTrackerData(syncEntry, liveValue);
+                            if (syncEntry.isSyncGlobally()) {
+                                capInfo.changedEntries.add(trackerData);
+                            } else {
+                                capInfo.changedPrivateEntries.add(trackerData);
+                            }
+                        }
+                    });
+                } else {
+                    for (SyncTracker syncTracker : capTracker.getSyncTrackers()) {
+                        if (returnAll || syncTracker.isMarkedForSend()) {
+                            if (syncTracker.getSyncEntry().isSyncGlobally()) {
+                                capInfo.changedEntries.add(syncTracker);
+                            } else {
+                                capInfo.changedPrivateEntries.add(syncTracker);
+                            }
                         }
                     }
                 }
-                if(!capInfo.changedEntries.isEmpty() || !capInfo.changedPrivateEntries.isEmpty()) {
+
+                if (!capInfo.changedEntries.isEmpty() || !capInfo.changedPrivateEntries.isEmpty()) {
                     capInfoList.add(capInfo);
                 }
             }

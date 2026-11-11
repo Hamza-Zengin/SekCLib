@@ -86,6 +86,20 @@ public class SyncDataCapabilityHandler {
         }
     }
 
+    @SubscribeEvent
+    public static void playerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if(event.getEntity() instanceof ServerPlayer serverPlayer) {
+            CapabilityBroadcaster.broadcastCapChanges(serverPlayer, true);
+        }
+    }
+
+    @SubscribeEvent
+    public static void playerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if(event.getEntity() instanceof ServerPlayer serverPlayer) {
+            CapabilityBroadcaster.broadcastCapChanges(serverPlayer, true);
+        }
+    }
+
     /**
      * Server side event
      * @param event the event
