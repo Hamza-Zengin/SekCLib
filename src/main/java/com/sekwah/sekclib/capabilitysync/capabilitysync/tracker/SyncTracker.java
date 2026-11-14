@@ -64,6 +64,18 @@ public class SyncTracker implements ISyncTrackerData {
         return this.sendValue;
     }
 
+    public void markSentValue(Object currentData) {
+        if (this.syncEntry != null && this.syncEntry.getSerializer() instanceof SyncTrackerClone cloner) {
+            this.sendValue = cloner.clone(currentData);
+        } else {
+            this.sendValue = currentData;
+        }
+        this.markedForSend = false;
+        if (this.syncEntry != null) {
+            this.minTicksLeft = this.syncEntry.getMinTicks();
+        }
+    }
+
     /**
      * This will only be called when the minTicks has passed.
      * @param currentValue - The current server side value

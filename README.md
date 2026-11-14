@@ -50,13 +50,16 @@ public class MyPlayerData {
 ```
 
 ### 2. Supported Trackers Out of the Box
-- `int` (`IntSyncTracker`)
-- `float` (`FloatSyncTracker`)
-- `boolean` (`BoolSyncTracker`)
-- `byte` (`ByteSyncTracker`)
+- `int` / `Integer` (`IntSyncTracker`)
+- `float` / `Float` (`FloatSyncTracker` — with `0.1f` epsilon delta tracking)
+- `boolean` / `Boolean` (`BoolSyncTracker`)
+- `byte` / `Byte` (`ByteSyncTracker`)
 - `String` (`StringSyncTracker`)
 - `Vec3` (`Vec3SyncTracker`)
 - `ResourceLocation` (`ResourceLocationSyncTracker`)
+- `CompoundTag` (`CompoundTagSyncTracker`)
+- `Set<ResourceLocation>` / `HashSet<ResourceLocation>` (`ResourceLocationSetSyncTracker`)
+- `Set<String>` / `HashSet<String>` (`StringSetSyncTracker`)
 
 ### 3. Custom Sync Tracker Types
 Register your own serializers for complex objects in your mod:
@@ -93,11 +96,12 @@ int mcColorInt = ColorUtil.colorToInt(vibrant);
 ```
 
 ### 6. Humanoid Model & Box Utilities
-Transfer humanoid model rotations and orientations cleanly across custom entity and armor layers without manual trigonometry:
+Create a blank `MeshDefinition` with all required vanilla `HumanoidModel` root parts (`head`, `hat`, `body`, `right_arm`, `left_arm`, `right_leg`, `left_leg`) for custom armor layers:
 ```java
 import com.sekwah.sekclib.util.ModelUtils;
+import net.minecraft.client.model.geom.builders.MeshDefinition;
 
-ModelUtils.copyHumanoidModelAngle(basePlayerModel, customArmorModel);
+MeshDefinition mesh = ModelUtils.createBlankHumanoidMesh();
 ```
 
 ---

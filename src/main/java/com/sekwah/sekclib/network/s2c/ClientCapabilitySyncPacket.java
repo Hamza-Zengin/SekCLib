@@ -86,11 +86,11 @@ public class ClientCapabilitySyncPacket {
         }
         List<ISyncTrackerData> syncTrackerDataList = new ArrayList<>();
         for (int i = 0; i < trackerCount; i++) {
-            int trackerId = inBuffer.readByte();
+            int trackerId = inBuffer.readUnsignedByte();
             boolean hasData = inBuffer.readBoolean();
             if (capability == null || trackerId < 0 || trackerId >= capability.getSyncEntries().size()) {
                 SekCLib.LOGGER.warn("Invalid tracker id: {} for capability", trackerId);
-                break;
+                return syncTrackerDataList;
             }
             SyncEntry tracker = capability.getSyncEntries().get(trackerId);
             Object data = hasData ? tracker.getSerializer().decode(inBuffer) : null;
@@ -165,8 +165,8 @@ public class ClientCapabilitySyncPacket {
                                     SyncEntry syncEntry = syncEntries.get(trackerId);
                                     try {
                                         Object syncValue = syncTrackerData.getSendValue();
-                                        if(syncTrackerData.getSyncEntry().getSerializer() instanceof SyncTrackerUpdater updater)   {
-                                            updater.updateTracker(syncValue, syncEntry.getGetter().invoke(targetCap));
+                                        if (syncTrackerData.getSyncEntry().getSerializer() instanceof SyncTrackerUpdater updater) {
+                                            syncValue = updater.updateTracker(syncValue, syncEntry.getGetter().invoke(targetCap));
                                         }
                                         syncEntry.getSetter().invoke(targetCap, syncValue);
                                     } catch (Throwable e) {

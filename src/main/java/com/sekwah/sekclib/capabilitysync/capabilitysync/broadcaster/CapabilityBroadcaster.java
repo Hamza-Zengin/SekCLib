@@ -67,6 +67,8 @@ public class CapabilityBroadcaster {
                             Object liveValue;
                             try {
                                 liveValue = syncEntry.getGetter().invoke(data);
+                                syncTracker.markSentValue(liveValue);
+                                liveValue = syncTracker.getSendValue();
                             } catch (Throwable t) {
                                 liveValue = syncTracker.getSendValue();
                             }
@@ -98,16 +100,6 @@ public class CapabilityBroadcaster {
         return capInfoList;
     }
 
-
-    /**
-     * Send all the data about this player to another.
-     *
-     * @param tracked
-     * @param reciever
-     */
-    public static void broadcastCapability(Player tracked, Player reciever) {
-
-    }
 
     /**
      * Collect player
