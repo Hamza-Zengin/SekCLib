@@ -1,30 +1,31 @@
 modLoader="javafml"
-loaderVersion="[47,)"
+loaderVersion="${loader_version_range}"
 issueTrackerURL="https://github.com/Hamza-Zengin/SekCLib/issues"
-license="MIT"
+license="${mod_license}"
+
 [[mods]]
-    modId="sekclib"
-    version="${file.jarVersion}"
-    displayName="SekC Lib"
+    modId="${mod_id}"
+    version="${mod_version}"
+    displayName="${mod_name}"
     updateJSONURL="https://raw.githubusercontent.com/Hamza-Zengin/SekCLib/master/update.json"
     displayURL="https://github.com/Hamza-Zengin/SekCLib"
-    authors="Sekwah, Hamza Zengin"
+    authors="${mod_authors}"
     description='''A library mod designed to make aspects of modding easier, in particular network syncing with clients.
 
 Other features and utilities are also included.
 '''
 
-[[dependencies.sekclib]]
-    modId="forge"
-    mandatory=true
-    versionRange="[47.0.0,)"
+[[dependencies.${mod_id}]]
+    modId="neoforge"
+    type="required"
+    versionRange="${neo_version_range}"
     ordering="NONE"
     side="BOTH"
 
 # https://maven.apache.org/enforcer/enforcer-rules/versionRanges.html
-[[dependencies.sekclib]]
+[[dependencies.${mod_id}]]
     modId="minecraft"
-    mandatory=true
-    versionRange="[1.20.1,1.21)"
+    type="required"
+    versionRange="${minecraft_version_range}"
     ordering="NONE"
     side="BOTH"

@@ -4,15 +4,15 @@ import com.google.gson.reflect.TypeToken;
 import com.sekwah.sekclib.SekCLib;
 import com.sekwah.sekclib.capabilitysync.capabilitysync.RegisterSyncTrackerTypeEvent;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 import java.util.HashSet;
 import java.util.Set;
 
-@Mod.EventBusSubscriber(modid = SekCLib.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = SekCLib.MOD_ID)
 public class BaseSyncTrackers {
     @SubscribeEvent
     public static void registerSyncTrackerEvent(RegisterSyncTrackerTypeEvent event) {
@@ -24,7 +24,7 @@ public class BaseSyncTrackers {
         event.registerSyncTracker(float.class, floatTracker);
         event.registerSyncTracker(Float.class, floatTracker);
 
-        event.registerSyncTracker(ResourceLocation.class, new ResourceLocationSyncTracker());
+        event.registerSyncTracker(Identifier.class, new IdentifierSyncTracker());
         event.registerSyncTracker(String.class, new StringSyncTracker());
 
         BoolSyncTracker boolTracker = new BoolSyncTracker();
@@ -41,9 +41,9 @@ public class BaseSyncTrackers {
         event.registerSyncTracker(CompoundTag.class, new CompoundTagSyncTracker());
 
         // Generic collection sync trackers
-        ResourceLocationSetSyncTracker resLocSetTracker = new ResourceLocationSetSyncTracker();
-        event.registerSyncTracker(new TypeToken<Set<ResourceLocation>>(){}.getType(), resLocSetTracker);
-        event.registerSyncTracker(new TypeToken<HashSet<ResourceLocation>>(){}.getType(), resLocSetTracker);
+        IdentifierSetSyncTracker identifierSetTracker = new IdentifierSetSyncTracker();
+        event.registerSyncTracker(new TypeToken<Set<Identifier>>(){}.getType(), identifierSetTracker);
+        event.registerSyncTracker(new TypeToken<HashSet<Identifier>>(){}.getType(), identifierSetTracker);
 
         StringSetSyncTracker stringSetTracker = new StringSetSyncTracker();
         event.registerSyncTracker(new TypeToken<Set<String>>(){}.getType(), stringSetTracker);

@@ -3,6 +3,7 @@ package com.sekwah.sekclib.capabilitysync.capabilitysync.broadcaster;
 import com.sekwah.sekclib.SekCLib;
 import com.sekwah.sekclib.capabilitysync.CapabilityEntry;
 import com.sekwah.sekclib.capabilitysync.SyncEntry;
+import com.sekwah.sekclib.capabilitysync.capability.SyncData;
 import com.sekwah.sekclib.capabilitysync.capability.SyncDataCapabilityHandler;
 import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.CapabilityTracker;
 import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.ISyncTrackerData;
@@ -13,10 +14,7 @@ import com.sekwah.sekclib.network.s2c.ClientCapabilitySyncPacket;
 import com.sekwah.sekclib.registries.SekCLibRegistries;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.common.capabilities.Capability;
-
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.attachment.AttachmentType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,74 +30,73 @@ public class CapabilityBroadcaster {
      * @param player
      */
     public static void checkCapData(LivingEntity player) {
-        player.getCapability(SyncDataCapabilityHandler.SYNC_DATA).ifPresent(syncData -> {
-            List<CapabilityTracker> capTrackers = syncData.getCapabilityTrackers();
-            for (CapabilityTracker capTracker : capTrackers) {
-                Capability<?> cap = capTracker.getCapability();
-                player.getCapability(cap).ifPresent(data -> {
-                    for (SyncTracker syncTracker : capTracker.getSyncTrackers()) {
-                        try {
-                            syncTracker.tick(data);
-                        } catch (Throwable e) {
-                            SekCLib.LOGGER.error("There was a problem updating a sync tracker", e);
-                        }
+        SyncData syncData = player.getData(SyncDataCapabilityHandler.SYNC_DATA.get());
+        syncData.ensureTrackers(player);
+        List<CapabilityTracker> capTrackers = syncData.getCapabilityTrackers();
+        for (CapabilityTracker capTracker : capTrackers) {
+            AttachmentType<?> attachmentType = capTracker.getAttachmentType();
+            if (attachmentType != null && player.hasData(attachmentType)) {
+                Object data = player.getData(attachmentType);
+                for (SyncTracker syncTracker : capTracker.getSyncTrackers()) {
+                    try {
+                        syncTracker.tick(data);
+                    } catch (Throwable e) {
+                        SekCLib.LOGGER.error("There was a problem updating a sync tracker", e);
                     }
-                });
+                }
             }
-        });
+        }
 
         broadcastCapChanges(player, false);
     }
 
     private static List<CapabilityInfo> collectEntries(LivingEntity entity, boolean returnAll) {
         List<CapabilityInfo> capInfoList = new ArrayList<>();
-        entity.getCapability(SyncDataCapabilityHandler.SYNC_DATA).ifPresent(syncData -> {
-            List<CapabilityTracker> capTrackers = syncData.getCapabilityTrackers();
-            for (CapabilityTracker capTracker : capTrackers) {
-                CapabilityEntry capEntry = capTracker.getCapabilityEntry();
-                Capability<?> cap = capTracker.getCapability();
-                CapabilityInfo capInfo = new CapabilityInfo(SekCLibRegistries.CAPABILITY_REGISTRY.getID(capEntry), capEntry);
+        SyncData syncData = entity.getData(SyncDataCapabilityHandler.SYNC_DATA.get());
+        syncData.ensureTrackers(entity);
+        List<CapabilityTracker> capTrackers = syncData.getCapabilityTrackers();
+        for (CapabilityTracker capTracker : capTrackers) {
+            CapabilityEntry capEntry = capTracker.getCapabilityEntry();
+            AttachmentType<?> attachmentType = capTracker.getAttachmentType();
+            CapabilityInfo capInfo = new CapabilityInfo(SekCLibRegistries.CAPABILITY_REGISTRY.getId(capEntry), capEntry);
 
-                if (returnAll && cap != null && entity.getCapability(cap).isPresent()) {
-                    entity.getCapability(cap).ifPresent(data -> {
-                        for (SyncTracker syncTracker : capTracker.getSyncTrackers()) {
-                            SyncEntry syncEntry = syncTracker.getSyncEntry();
-                            Object liveValue;
-                            try {
-                                liveValue = syncEntry.getGetter().invoke(data);
-                                syncTracker.markSentValue(liveValue);
-                                liveValue = syncTracker.getSendValue();
-                            } catch (Throwable t) {
-                                liveValue = syncTracker.getSendValue();
-                            }
-                            ISyncTrackerData trackerData = new SyncTrackerData(syncEntry, liveValue);
-                            if (syncEntry.isSyncGlobally()) {
-                                capInfo.changedEntries.add(trackerData);
-                            } else {
-                                capInfo.changedPrivateEntries.add(trackerData);
-                            }
-                        }
-                    });
-                } else {
-                    for (SyncTracker syncTracker : capTracker.getSyncTrackers()) {
-                        if (returnAll || syncTracker.isMarkedForSend()) {
-                            if (syncTracker.getSyncEntry().isSyncGlobally()) {
-                                capInfo.changedEntries.add(syncTracker);
-                            } else {
-                                capInfo.changedPrivateEntries.add(syncTracker);
-                            }
+            if (returnAll && attachmentType != null && entity.hasData(attachmentType)) {
+                Object data = entity.getData(attachmentType);
+                for (SyncTracker syncTracker : capTracker.getSyncTrackers()) {
+                    SyncEntry syncEntry = syncTracker.getSyncEntry();
+                    Object liveValue;
+                    try {
+                        liveValue = syncEntry.getGetter().invoke(data);
+                        syncTracker.markSentValue(liveValue);
+                        liveValue = syncTracker.getSendValue();
+                    } catch (Throwable t) {
+                        liveValue = syncTracker.getSendValue();
+                    }
+                    ISyncTrackerData trackerData = new SyncTrackerData(syncEntry, liveValue);
+                    if (syncEntry.isSyncGlobally()) {
+                        capInfo.changedEntries.add(trackerData);
+                    } else {
+                        capInfo.changedPrivateEntries.add(trackerData);
+                    }
+                }
+            } else {
+                for (SyncTracker syncTracker : capTracker.getSyncTrackers()) {
+                    if (returnAll || syncTracker.isMarkedForSend()) {
+                        if (syncTracker.getSyncEntry().isSyncGlobally()) {
+                            capInfo.changedEntries.add(syncTracker);
+                        } else {
+                            capInfo.changedPrivateEntries.add(syncTracker);
                         }
                     }
                 }
-
-                if (!capInfo.changedEntries.isEmpty() || !capInfo.changedPrivateEntries.isEmpty()) {
-                    capInfoList.add(capInfo);
-                }
             }
-        });
+
+            if (!capInfo.changedEntries.isEmpty() || !capInfo.changedPrivateEntries.isEmpty()) {
+                capInfoList.add(capInfo);
+            }
+        }
         return capInfoList;
     }
-
 
     /**
      * Collect player
@@ -110,7 +107,7 @@ public class CapabilityBroadcaster {
 
         List<CapabilityInfo> dataToSend = collectEntries(entity, sendAll);
 
-        if(dataToSend.isEmpty()) {
+        if (dataToSend.isEmpty()) {
             return;
         }
 
@@ -136,7 +133,7 @@ public class CapabilityBroadcaster {
             // When only globally visible capabilities change, send a single packet to TRACKING_ENTITY_AND_SELF
             ClientCapabilitySyncPacket packet = new ClientCapabilitySyncPacket(entity, dataToSend, false);
             if (!packet.capabilityData.isEmpty()) {
-                SekCPacketHandler.SYNC_CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity), packet);
+                SekCPacketHandler.sendToTrackingAndSelf(packet, entity);
             }
         }
 
@@ -145,11 +142,11 @@ public class CapabilityBroadcaster {
     public static void broadcastCapToPlayer(LivingEntity entity, ServerPlayer player) {
         List<CapabilityInfo> dataToSend = collectEntries(entity, true);
 
-        if(dataToSend.isEmpty()) {
+        if (dataToSend.isEmpty()) {
             return;
         }
         ClientCapabilitySyncPacket forOthers = new ClientCapabilitySyncPacket(entity, dataToSend, false);
-        if(!forOthers.capabilityData.isEmpty()) {
+        if (!forOthers.capabilityData.isEmpty()) {
             SekCPacketHandler.sendToPlayer(forOthers, player);
         }
     }

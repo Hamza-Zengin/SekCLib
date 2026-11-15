@@ -1,18 +1,23 @@
 package com.sekwah.sekclib.network.s2c;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
+import com.sekwah.sekclib.SekCLib;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.NetworkEvent;
-
-import java.util.function.Supplier;
 
 /**
  * Tells the client that they should be moving and at what velocity
  */
-public class ClientVelocityPacket {
+public class ClientVelocityPacket implements CustomPacketPayload {
+
+    public static final CustomPacketPayload.Type<ClientVelocityPacket> TYPE =
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(SekCLib.MOD_ID, "client_velocity"));
+
+    public static final StreamCodec<FriendlyByteBuf, ClientVelocityPacket> STREAM_CODEC =
+            StreamCodec.ofMember(ClientVelocityPacket::encode, ClientVelocityPacket::decode);
 
     private final int xa;
     private final int ya;
@@ -29,9 +34,26 @@ public class ClientVelocityPacket {
         double d1 = Mth.clamp(velocity.x, -maxVelocity, maxVelocity);
         double d2 = Mth.clamp(velocity.y, -maxVelocity, maxVelocity);
         double d3 = Mth.clamp(velocity.z, -maxVelocity, maxVelocity);
-        this.xa = (int)(d1 * 8000.0D);
-        this.ya = (int)(d2 * 8000.0D);
-        this.za = (int)(d3 * 8000.0D);
+        this.xa = (int) (d1 * 8000.0D);
+        this.ya = (int) (d2 * 8000.0D);
+        this.za = (int) (d3 * 8000.0D);
+    }
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public int getXa() {
+        return xa;
+    }
+
+    public int getYa() {
+        return ya;
+    }
+
+    public int getZa() {
+        return za;
     }
 
     public static void encode(ClientVelocityPacket msg, FriendlyByteBuf outBuffer) {
@@ -45,20 +67,5 @@ public class ClientVelocityPacket {
         short y = inBuffer.readShort();
         short z = inBuffer.readShort();
         return new ClientVelocityPacket(x, y, z);
-    }
-
-    public static class Handler {
-        public static void handle(ClientVelocityPacket msg, Supplier<NetworkEvent.Context> ctx) {
-            ctx.get().enqueueWork(() -> {
-                LocalPlayer player = Minecraft.getInstance().player;
-                if(player != null) {
-                    if(msg.ya > 0) {
-                        player.setOnGround(false);
-                    }
-                    player.lerpMotion(msg.xa / 8000.0D, msg.ya / 8000.0D, msg.za / 8000.0D);
-                }
-            });
-            ctx.get().setPacketHandled(true);
-        }
     }
 }

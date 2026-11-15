@@ -1,44 +1,42 @@
 package com.sekwah.sekclib.network;
+
 import com.sekwah.sekclib.SekCLib;
 import com.sekwah.sekclib.network.s2c.ClientCapabilitySyncPacket;
 import com.sekwah.sekclib.network.s2c.ClientVelocityPacket;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
+@EventBusSubscriber(modid = SekCLib.MOD_ID)
 public class SekCPacketHandler {
 
     public static final String PROTOCOL_VERSION = "1";
 
-    public static final SimpleChannel SYNC_CHANNEL = NetworkRegistry.ChannelBuilder
-            .named(new ResourceLocation(SekCLib.MOD_ID, "sync_channel"))
-            .networkProtocolVersion(() -> PROTOCOL_VERSION)
-            .clientAcceptedVersions(PROTOCOL_VERSION::equals)
-            .serverAcceptedVersions(PROTOCOL_VERSION::equals)
-            .simpleChannel();
-
-    public static void init() {
-        SYNC_CHANNEL.registerMessage(0, ClientCapabilitySyncPacket.class, ClientCapabilitySyncPacket::encode, ClientCapabilitySyncPacket::decode, ClientCapabilitySyncPacket.Handler::handle);
-        SYNC_CHANNEL.registerMessage(1, ClientVelocityPacket.class, ClientVelocityPacket::encode, ClientVelocityPacket::decode, ClientVelocityPacket.Handler::handle);
+    @SubscribeEvent
+    public static void registerPayloads(final RegisterPayloadHandlersEvent event) {
+        final PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
+        registrar.playToClient(ClientCapabilitySyncPacket.TYPE, ClientCapabilitySyncPacket.STREAM_CODEC);
+        registrar.playToClient(ClientVelocityPacket.TYPE, ClientVelocityPacket.STREAM_CODEC);
     }
 
-    public static void sendToPlayer(Object obj, ServerPlayer player) {
-        SYNC_CHANNEL.sendTo(obj, player.connection.connection, NetworkDirection.PLAY_TO_CLIENT);
+    public static void sendToPlayer(CustomPacketPayload payload, ServerPlayer player) {
+        PacketDistributor.sendToPlayer(player, payload);
     }
 
-    public static void sendToAll(Object obj) {
-        SYNC_CHANNEL.send(PacketDistributor.ALL.noArg(), obj);
+    public static void sendToAll(CustomPacketPayload payload) {
+        PacketDistributor.sendToAllPlayers(payload);
     }
 
-    public static void sendToTracking(Object obj, LivingEntity player) {
-        SYNC_CHANNEL.send(PacketDistributor.TRACKING_ENTITY.with(() -> player), obj);
+    public static void sendToTracking(CustomPacketPayload payload, LivingEntity entity) {
+        PacketDistributor.sendToPlayersTrackingEntity(entity, payload);
     }
 
-    public static void sendToTrackingAndSelf(Object obj, LivingEntity player) {
-        SYNC_CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), obj);
+    public static void sendToTrackingAndSelf(CustomPacketPayload payload, LivingEntity entity) {
+        PacketDistributor.sendToPlayersTrackingEntityAndSelf(entity, payload);
     }
 }

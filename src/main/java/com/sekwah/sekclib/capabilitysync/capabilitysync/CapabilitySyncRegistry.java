@@ -6,15 +6,15 @@ import com.sekwah.sekclib.capabilitysync.SyncEntry;
 import com.sekwah.sekclib.capabilitysync.capabilitysync.annotation.Sync;
 import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.SyncTrackerSerializer;
 import com.sekwah.sekclib.registries.SekCLibRegistries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fml.LoadingFailedException;
-import net.minecraftforge.fml.ModLoadingException;
-import net.minecraftforge.fml.ModLoadingStage;
+import net.minecraft.core.Registry;
+import net.minecraft.resources.Identifier;
+import net.neoforged.neoforge.attachment.AttachmentType;
+import net.neoforged.neoforge.registries.RegisterEvent;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * Currently only designed for players though if there is demand we can add entity syncing too.
@@ -25,18 +25,35 @@ public class CapabilitySyncRegistry {
 
     private static final Map<Type, SyncTrackerSerializer> SYNC_TRACKER_SERIALIZER = new HashMap<>();
 
+    public static void registerPlayerCap(Identifier resourceSyncName, AttachmentType<?> attachmentType, Class<?> clazz) {
+        registerPlayerCap(resourceSyncName, () -> attachmentType, clazz, null);
+    }
+
+    public static void registerPlayerCap(Identifier resourceSyncName, Supplier<? extends AttachmentType<?>> attachmentType, Class<?> clazz) {
+        registerPlayerCap(resourceSyncName, attachmentType, clazz, null);
+    }
+
     /**
-     * @param capability the capability to process
-     * @param clazz so that the fields can be pre-grabbed.
+     * @param resourceSyncName the registry id for client/server sync
+     * @param attachmentType   the attachment type supplier to process
+     * @param clazz            so that the fields can be pre-grabbed.
+     * @param registerHelper   optional RegisterEvent helper for NeoForge registry lifecycle
      */
     @SuppressWarnings("squid:S3011")
-    public static void registerPlayerCap(ResourceLocation resourceSyncName, Capability<?> capability, Class<?> clazz) {
+    public static void registerPlayerCap(Identifier resourceSyncName,
+                                         Supplier<? extends AttachmentType<?>> attachmentType,
+                                         Class<?> clazz,
+                                         RegisterEvent.RegisterHelper<CapabilityEntry> registerHelper) {
         List<Field> values = Arrays.stream(clazz.getDeclaredFields())
                 .filter(value -> value.isAnnotationPresent(Sync.class))
                 .sorted(Comparator.comparing(Field::getName)).toList();
-        CapabilityEntry capabilityEntry = new CapabilityEntry(resourceSyncName, capability, clazz);
-        SekCLibRegistries.CAPABILITY_REGISTRY.register(resourceSyncName, capabilityEntry);
-        List<ModLoadingException> errors = new ArrayList<>();
+        CapabilityEntry capabilityEntry = new CapabilityEntry(resourceSyncName, attachmentType, clazz);
+        if (registerHelper != null) {
+            registerHelper.register(resourceSyncName, capabilityEntry);
+        } else {
+            Registry.register(SekCLibRegistries.CAPABILITY_REGISTRY, resourceSyncName, capabilityEntry);
+        }
+        List<String> errors = new ArrayList<>();
         int trackerId = 0;
         for (Field field : values) {
             Sync sync = field.getAnnotation(Sync.class);
@@ -46,17 +63,17 @@ public class CapabilitySyncRegistry {
                 serializer = SYNC_TRACKER_SERIALIZER.get(field.getType());
             }
 
-            if(serializer == null) {
+            if (serializer == null) {
                 String message = String.format("@Sync used on unsupported type %s (generic: %s). (Class: %s, Field: %s)", field.getType().getName(), fieldType.getTypeName(), clazz.getName(), field.getName());
                 SekCLib.LOGGER.error(message);
-                errors.add(new ModLoadingException(null, ModLoadingStage.COMMON_SETUP, message, null));
+                errors.add(message);
             }
             try {
                 field.setAccessible(true);
-            } catch(UnsupportedOperationException e) {
+            } catch (UnsupportedOperationException e) {
                 String message = String.format("Failed to set field accessible. (Class: %s, Field: %s)", clazz.getName(), field.getName());
                 SekCLib.LOGGER.error(message);
-                errors.add(new ModLoadingException(null, ModLoadingStage.COMMON_SETUP, message, null));
+                errors.add(message);
             }
             try {
                 SyncEntry entry = new SyncEntry(field.getName(), field, sync.minTicks(), trackerId, sync.syncGlobally(), serializer);
@@ -65,11 +82,11 @@ public class CapabilitySyncRegistry {
             } catch (IllegalAccessException e) {
                 String message = String.format("There was a problem un-reflecting (Class: %s, Field: %s)", clazz.getName(), field.getName());
                 SekCLib.LOGGER.error(message);
-                errors.add(new ModLoadingException(null, ModLoadingStage.COMMON_SETUP, message, null));
+                errors.add(message);
             }
         }
-        if(!errors.isEmpty()) {
-            throw new LoadingFailedException(errors);
+        if (!errors.isEmpty()) {
+            throw new IllegalStateException("Failed to register player capability sync for " + resourceSyncName + ":\n" + String.join("\n", errors));
         }
     }
 
@@ -93,6 +110,6 @@ public class CapabilitySyncRegistry {
      * @return list of capabilities for syncing later
      */
     public static Collection<CapabilityEntry> getPlayerCapabilities() {
-        return SekCLibRegistries.CAPABILITY_REGISTRY.getValues();
+        return SekCLibRegistries.CAPABILITY_REGISTRY.stream().toList();
     }
 }

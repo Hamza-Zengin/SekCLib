@@ -1,28 +1,39 @@
 package com.sekwah.sekclib.capabilitysync;
 
-import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.common.capabilities.Capability;
+import net.minecraft.resources.Identifier;
+import net.neoforged.neoforge.attachment.AttachmentType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public class CapabilityEntry {
-    private final Capability<?> capability;
-    private final Class clazz;
+    private final Identifier resourceSyncName;
+    private final Supplier<? extends AttachmentType<?>> attachmentType;
+    private final Class<?> clazz;
 
     private final List<SyncEntry> syncEntries = new ArrayList<>();
 
     private final Map<String, SyncEntry> syncEntryHashMap = new HashMap<>();
 
-    public CapabilityEntry(ResourceLocation resourceSyncName, Capability<?> capability, Class clazz) {
-        this.capability = capability;
+    public CapabilityEntry(Identifier resourceSyncName, Supplier<? extends AttachmentType<?>> attachmentType, Class<?> clazz) {
+        this.resourceSyncName = resourceSyncName;
+        this.attachmentType = attachmentType;
         this.clazz = clazz;
     }
 
-    public Capability<?> getCapability() {
-        return capability;
+    public CapabilityEntry(Identifier resourceSyncName, AttachmentType<?> attachmentType, Class<?> clazz) {
+        this(resourceSyncName, () -> attachmentType, clazz);
+    }
+
+    public Identifier getResourceSyncName() {
+        return resourceSyncName;
+    }
+
+    public AttachmentType<?> getAttachmentType() {
+        return attachmentType.get();
     }
 
     public List<SyncEntry> getSyncEntries() {
@@ -34,13 +45,13 @@ public class CapabilityEntry {
     }
 
     public void addSyncEntry(SyncEntry entry) {
-        if(!this.syncEntryHashMap.containsKey(entry.getName())) {
+        if (!this.syncEntryHashMap.containsKey(entry.getName())) {
             this.syncEntries.add(entry);
             this.syncEntryHashMap.put(entry.getName(), entry);
         }
     }
 
-    public Class getCapabilityClass() {
+    public Class<?> getCapabilityClass() {
         return clazz;
     }
 }
