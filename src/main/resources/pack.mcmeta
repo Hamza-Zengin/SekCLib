@@ -1,6 +1,7 @@
 {
     "pack": {
         "description": "SekC Lib resources",
-        "pack_format": 15
+        "min_format": 97,
+        "max_format": 121
     }
 }

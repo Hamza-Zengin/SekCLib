@@ -50,7 +50,7 @@ public class ColorUtil {
      * @return minecraft TextColor
      */
     public static TextColor toMCColor(Color color) {
-        return TextColor.parseColor(String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue()));
+        return TextColor.fromRgb(color.getRGB() & 0xFFFFFF);
     }
 
     public static int colorToInt(Color color) {

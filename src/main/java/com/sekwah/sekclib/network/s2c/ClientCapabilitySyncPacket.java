@@ -6,21 +6,16 @@ import com.sekwah.sekclib.capabilitysync.SyncEntry;
 import com.sekwah.sekclib.capabilitysync.capabilitysync.broadcaster.CapabilityInfo;
 import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.ISyncTrackerData;
 import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.SyncTrackerData;
-import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.SyncTrackerUpdater;
 import com.sekwah.sekclib.registries.SekCLibRegistries;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.world.entity.Entity;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
 
 /**
  * Structure
@@ -34,7 +29,15 @@ import java.util.function.Supplier;
  * boolean has data (not null) (if its null skip encoding & decoding)
  * (push to the tracker to handle the encoding and decoding)
  */
-public class ClientCapabilitySyncPacket {
+public class ClientCapabilitySyncPacket implements CustomPacketPayload {
+
+    public static final CustomPacketPayload.Type<ClientCapabilitySyncPacket> TYPE =
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(SekCLib.MOD_ID, "client_capability_sync"));
+
+    public static final StreamCodec<FriendlyByteBuf, ClientCapabilitySyncPacket> STREAM_CODEC =
+            StreamCodec.ofMember(ClientCapabilitySyncPacket::encode, ClientCapabilitySyncPacket::decode);
+
+    private static final int MAX_SYNC_ENTRIES = 256;
 
     private final int entityId;
     public List<CapabilityInfo> capabilityData;
@@ -61,26 +64,33 @@ public class ClientCapabilitySyncPacket {
         this.capabilityData = capabilityData;
     }
 
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public int getEntityId() {
+        return entityId;
+    }
+
     public static void encodeSyncTrackers(List<ISyncTrackerData> trackers, FriendlyByteBuf outBuffer) {
         for (ISyncTrackerData tracker : trackers) {
             outBuffer.writeByte(tracker.getSyncEntry().getTrackerId());
             outBuffer.writeBoolean(tracker.getSendValue() != null);
-            if(tracker.getSendValue() != null) {
+            if (tracker.getSendValue() != null) {
                 tracker.getSyncEntry().getSerializer().encode(tracker.getSendValue(), outBuffer);
             }
         }
     }
 
     /**
-     * TODO replace return type with a temporary data only object ready for processing back into the list.
-     *
      * @param capability for context on how to de-code the capabilities
      * @param inBuffer
      * @return
      */
     public static List<ISyncTrackerData> decodeSyncTrackers(CapabilityEntry capability, FriendlyByteBuf inBuffer) {
         int trackerCount = inBuffer.readInt();
-        if (trackerCount < 0 || trackerCount > 256) {
+        if (trackerCount < 0 || trackerCount > MAX_SYNC_ENTRIES) {
             SekCLib.LOGGER.warn("Received invalid tracker count: {}", trackerCount);
             return Collections.emptyList();
         }
@@ -114,17 +124,16 @@ public class ClientCapabilitySyncPacket {
     }
 
     public static ClientCapabilitySyncPacket decode(FriendlyByteBuf inBuffer) {
-
         int playerId = inBuffer.readInt();
         int capCount = inBuffer.readInt();
-        if (capCount < 0 || capCount > 256) {
+        if (capCount < 0 || capCount > MAX_SYNC_ENTRIES) {
             SekCLib.LOGGER.warn("Received invalid capability count: {}", capCount);
             return new ClientCapabilitySyncPacket(playerId, Collections.emptyList());
         }
         List<CapabilityInfo> capabilityInfoList = new ArrayList<>();
         for (int i = 0; i < capCount; i++) {
             int capId = inBuffer.readInt();
-            CapabilityEntry capability = SekCLibRegistries.CAPABILITY_REGISTRY.getValue(capId);
+            CapabilityEntry capability = SekCLibRegistries.CAPABILITY_REGISTRY.byId(capId);
             if (capability == null) {
                 SekCLib.LOGGER.warn("Received capability sync packet for unregistered capability id: {}", capId);
                 break;
@@ -138,46 +147,5 @@ public class ClientCapabilitySyncPacket {
         }
 
         return new ClientCapabilitySyncPacket(playerId, capabilityInfoList);
-    }
-
-    public static class Handler {
-        public static void handle(ClientCapabilitySyncPacket msg, Supplier<NetworkEvent.Context> ctx) {
-            NetworkEvent.Context context = ctx.get();
-            context.enqueueWork(() ->
-                DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
-                    ClientLevel level = Minecraft.getInstance().level;
-                    if (level == null) {
-                        return;
-                    }
-                    Entity entity = level.getEntity(msg.entityId);
-                    if (entity instanceof LivingEntity livingEntity) {
-                        for (CapabilityInfo capInfo : msg.capabilityData) {
-                            if (capInfo.capability == null || capInfo.capability.getCapability() == null) {
-                                continue;
-                            }
-                            livingEntity.getCapability(capInfo.capability.getCapability()).ifPresent(targetCap -> {
-                                List<SyncEntry> syncEntries = capInfo.capability.getSyncEntries();
-                                for (ISyncTrackerData syncTrackerData : capInfo.changedEntries) {
-                                    int trackerId = syncTrackerData.getSyncEntry().getTrackerId();
-                                    if (trackerId < 0 || trackerId >= syncEntries.size()) {
-                                        continue;
-                                    }
-                                    SyncEntry syncEntry = syncEntries.get(trackerId);
-                                    try {
-                                        Object syncValue = syncTrackerData.getSendValue();
-                                        if (syncTrackerData.getSyncEntry().getSerializer() instanceof SyncTrackerUpdater updater) {
-                                            syncValue = updater.updateTracker(syncValue, syncEntry.getGetter().invoke(targetCap));
-                                        }
-                                        syncEntry.getSetter().invoke(targetCap, syncValue);
-                                    } catch (Throwable e) {
-                                        SekCLib.LOGGER.error("There was a problem setting a value", e);
-                                    }
-                                }
-                            });
-                        }
-                    }
-                }));
-            context.setPacketHandled(true);
-        }
     }
 }
