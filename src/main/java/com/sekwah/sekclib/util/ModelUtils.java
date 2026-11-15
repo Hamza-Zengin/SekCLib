@@ -13,8 +13,8 @@ public class ModelUtils {
     public static MeshDefinition createBlankHumanoidMesh() {
         MeshDefinition meshdefinition = new MeshDefinition();
         PartDefinition partdefinition = meshdefinition.getRoot();
-        partdefinition.addOrReplaceChild("head", CubeListBuilder.create(), PartPose.ZERO);
-        partdefinition.addOrReplaceChild("hat", CubeListBuilder.create(), PartPose.ZERO);
+        PartDefinition head = partdefinition.addOrReplaceChild("head", CubeListBuilder.create(), PartPose.ZERO);
+        head.addOrReplaceChild("hat", CubeListBuilder.create(), PartPose.ZERO);
         partdefinition.addOrReplaceChild("body", CubeListBuilder.create(), PartPose.ZERO);
         partdefinition.addOrReplaceChild("right_arm", CubeListBuilder.create(), PartPose.ZERO);
         partdefinition.addOrReplaceChild("left_arm", CubeListBuilder.create(), PartPose.ZERO);
