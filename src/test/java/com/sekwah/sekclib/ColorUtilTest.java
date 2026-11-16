@@ -47,4 +47,36 @@ public class ColorUtilTest {
         int intColor = ColorUtil.colorToInt(green);
         assertEquals(0x00FF00, intColor);
     }
+
+    @Test
+    void testArgbPackingAndClamping() {
+        assertEquals(0xFFFFFFFF, ColorUtil.argb(1.0F, 1.0F, 1.0F, 1.0F));
+        assertEquals(0x00000000, ColorUtil.argb(0.0F, 0.0F, 0.0F, 0.0F));
+        // Out-of-bounds values should clamp cleanly to [0..1]
+        assertEquals(0xFF00FF00, ColorUtil.argb(1.5F, -0.5F, 2.0F, -1.0F));
+    }
+
+    @Test
+    void testLerpArgb() {
+        int black = 0x00000000;
+        int white = 0xFFFFFFFF;
+        assertEquals(black, ColorUtil.lerpArgb(black, white, -0.5F));
+        assertEquals(white, ColorUtil.lerpArgb(black, white, 1.5F));
+
+        int mid = ColorUtil.lerpArgb(0xFF000000, 0xFFFFFFFF, 0.5F);
+        assertEquals(0xFF, (mid >>> 24) & 0xFF);
+        assertEquals(128, (mid >>> 16) & 0xFF);
+        assertEquals(128, (mid >>> 8) & 0xFF);
+        assertEquals(128, mid & 0xFF);
+    }
+
+    @Test
+    void testScaleAlpha() {
+        int color = 0xFF112233;
+        assertEquals(0x00112233, ColorUtil.scaleAlpha(color, 0.0F));
+        assertEquals(0xFF112233, ColorUtil.scaleAlpha(color, 1.5F));
+        int half = ColorUtil.scaleAlpha(0x80112233, 0.5F);
+        assertEquals(64, (half >>> 24) & 0xFF);
+        assertEquals(0x112233, half & 0x00FFFFFF);
+    }
 }

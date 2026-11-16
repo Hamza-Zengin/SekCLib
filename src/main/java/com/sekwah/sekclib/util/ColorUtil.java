@@ -58,4 +58,40 @@ public class ColorUtil {
         return mcColor != null ? mcColor.getValue() : (color.getRGB() & 0xFFFFFF);
     }
 
+    /**
+     * Packs normalized float RGBA channels [0..1] into a 32-bit ARGB integer.
+     */
+    public static int argb(float alpha, float red, float green, float blue) {
+        int a = Math.round(clamp01(alpha) * 255.0F);
+        int r = Math.round(clamp01(red) * 255.0F);
+        int g = Math.round(clamp01(green) * 255.0F);
+        int b = Math.round(clamp01(blue) * 255.0F);
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    /**
+     * Linearly interpolates between two packed ARGB colors by t clamped to [0..1].
+     */
+    public static int lerpArgb(int startArgb, int endArgb, float t) {
+        float clamped = clamp01(t);
+        int a = Math.round(((startArgb >>> 24) & 0xFF) + (((endArgb >>> 24) & 0xFF) - ((startArgb >>> 24) & 0xFF)) * clamped);
+        int r = Math.round(((startArgb >>> 16) & 0xFF) + (((endArgb >>> 16) & 0xFF) - ((startArgb >>> 16) & 0xFF)) * clamped);
+        int g = Math.round(((startArgb >>> 8) & 0xFF) + (((endArgb >>> 8) & 0xFF) - ((startArgb >>> 8) & 0xFF)) * clamped);
+        int b = Math.round((startArgb & 0xFF) + ((endArgb & 0xFF) - (startArgb & 0xFF)) * clamped);
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    /**
+     * Returns a copy of the packed ARGB color with its alpha channel scaled by alphaMultiplier [0..1].
+     */
+    public static int scaleAlpha(int argb, float alphaMultiplier) {
+        int originalAlpha = (argb >>> 24) & 0xFF;
+        int scaledAlpha = Math.round(originalAlpha * clamp01(alphaMultiplier));
+        return (scaledAlpha << 24) | (argb & 0x00FFFFFF);
+    }
+
+    private static float clamp01(float value) {
+        return Math.max(0.0F, Math.min(1.0F, value));
+    }
+
 }
