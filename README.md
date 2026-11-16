@@ -6,11 +6,11 @@
 
 **A lightweight, high-performance Minecraft Forge networking and capability synchronization library.**
 
-[![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1-brightgreen.svg)](https://minecraft.net/)
-[![Forge](https://img.shields.io/badge/Forge-47.3.0+-orange.svg)](https://files.minecraftforge.net/)
-[![Version](https://img.shields.io/badge/Version-1.1.0-blue.svg)](https://github.com/Hamza-Zengin/SekCLib/releases)
+[![Minecraft](https://img.shields.io/badge/Minecraft-26.3-brightgreen.svg)](https://minecraft.net/)
+[![NeoForge](https://img.shields.io/badge/NeoForge-26.3.0.83+-orange.svg)](https://neoforged.net/)
+[![Version](https://img.shields.io/badge/Version-2.0.0-blue.svg)](https://github.com/Hamza-Zengin/SekCLib/releases)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Java](https://img.shields.io/badge/Java-17-red.svg)](https://www.oracle.com/java/)
+[![Java](https://img.shields.io/badge/Java-25-red.svg)](https://www.oracle.com/java/)
 
 </div>
 
@@ -18,7 +18,7 @@
 
 ## 🌟 Overview
 
-**SekCLib** is designed to eliminate boilerplate code when developing Minecraft Forge mods, specifically around:
+**SekCLib** is designed to eliminate boilerplate code when developing Minecraft NeoForge mods, specifically around:
 - **Capability Synchronization**: Sync player and entity capabilities between server and client with declarative `@Sync` annotations.
 - **Network Rate Throttling**: Configure minimum tick intervals (`minTicks`) and private vs. global tracking scopes to optimize server network bandwidth.
 - **Server-to-Client Motion**: Apply velocity from server side with client-side prediction and ground drag avoidance.
@@ -109,11 +109,11 @@ MeshDefinition mesh = ModelUtils.createBlankHumanoidMesh();
 ## 🚀 Adding SekCLib as a Dependency
 
 ### Option A: Local Jar (Recommended for FlatDir)
-Place `SekCLib-1.20.1-1.1.0-deobf.jar` inside your mod's `libs/` folder:
+Place `SekCLib-26.3-2.0.0.jar` inside your mod's `libs/` folder:
 
 ```groovy
 dependencies {
-    implementation fg.deobf(files("libs/SekCLib-1.20.1-1.1.0-deobf.jar"))
+    implementation files("libs/SekCLib-26.3-2.0.0.jar")
 }
 ```
 
@@ -131,16 +131,16 @@ repositories {
 }
 
 dependencies {
-    implementation fg.deobf("com.sekwah:SekCLib-1.20.1:1.1.0:deobf")
+    implementation "com.sekwah:SekCLib-26.3:2.0.0"
 }
 ```
 
-### `mods.toml` Dependency Declaration
+### `neoforge.mods.toml` Dependency Declaration
 ```toml
 [[dependencies.your_mod_id]]
     modId="sekclib"
-    mandatory=true
-    versionRange="[1.1.0,2.0.0)"
+    type="required"
+    versionRange="[2.0.0,3.0.0)"
     ordering="AFTER"
     side="BOTH"
 ```
@@ -165,9 +165,8 @@ cd SekCLib
 ```
 
 The resulting jars will be placed in `build/libs/`:
-- `SekCLib-1.20.1-1.1.0-universal.jar` (reobfuscated for gameplay)
-- `SekCLib-1.20.1-1.1.0-deobf.jar` (deobfuscated for mod development)
-- `SekCLib-1.20.1-1.1.0-sources.jar` (source code)
+- `SekCLib-26.3-2.0.0.jar` (universal mod jar)
+- `SekCLib-26.3-2.0.0-sources.jar` (source code)
 
 ---
 
