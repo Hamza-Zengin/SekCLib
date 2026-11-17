@@ -124,8 +124,11 @@ public class SekCLibGameTests {
                 "No spectators should be returned before camera is attached");
 
         spectator.setCamera(target);
+        helper.assertTrue(spectator.isSpectator(), "Mock player should be in spectator mode");
+        helper.assertTrue(spectator.getCamera() == target, "Spectator camera should point to target");
+        helper.assertTrue(target.level().players().contains(spectator), "Target level should contain spectator");
         List<ServerPlayer> spectators = CapabilityBroadcaster.getSpectators(target);
-        helper.assertValueEqual(1, spectators.size(), "Expected exactly 1 spectator viewing target");
+        helper.assertValueEqual(spectators.size(), 1, "spectator count");
         helper.assertTrue(spectators.get(0) == spectator, "Expected spectator to match camera viewer");
         helper.assertFalse(spectators.contains(survivalOther), "Survival player must not be listed as spectator");
 
@@ -163,8 +166,8 @@ public class SekCLibGameTests {
 
         helper.assertTrue(privateTracker.isMarkedForSend(), "Changed privateChakra must be marked for send");
         helper.assertTrue(globalTracker.isMarkedForSend(), "Changed globalFlag must be marked for send");
-        helper.assertValueEqual(42, privateTracker.getSendValue(), "privateChakra sendValue mismatch");
-        helper.assertValueEqual(7, globalTracker.getSendValue(), "globalFlag sendValue mismatch");
+        helper.assertValueEqual(privateTracker.getSendValue(), 42, "privateChakra sendValue");
+        helper.assertValueEqual(globalTracker.getSendValue(), 7, "globalFlag sendValue");
 
         helper.succeed();
     }
