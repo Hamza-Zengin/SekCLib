@@ -8,7 +8,7 @@
 
 [![Minecraft](https://img.shields.io/badge/Minecraft-26.3-brightgreen.svg)](https://minecraft.net/)
 [![NeoForge](https://img.shields.io/badge/NeoForge-26.3.0.83+-orange.svg)](https://neoforged.net/)
-[![Version](https://img.shields.io/badge/Version-2.0.0-blue.svg)](https://github.com/Hamza-Zengin/SekCLib/releases)
+[![Version](https://img.shields.io/badge/Version-0.1.0-blue.svg)](https://github.com/Hamza-Zengin/SekCLib/releases)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-red.svg)](https://www.oracle.com/java/)
 
@@ -109,11 +109,11 @@ MeshDefinition mesh = ModelUtils.createBlankHumanoidMesh();
 ## 🚀 Adding SekCLib as a Dependency
 
 ### Option A: Local Jar (Recommended for FlatDir)
-Place `SekCLib-26.3-2.0.0.jar` inside your mod's `libs/` folder:
+Place `SekCLib-0.1.0.jar` inside your mod's `libs/` folder:
 
 ```groovy
 dependencies {
-    implementation files("libs/SekCLib-26.3-2.0.0.jar")
+    implementation files("libs/SekCLib-0.1.0.jar")
 }
 ```
 
@@ -131,7 +131,7 @@ repositories {
 }
 
 dependencies {
-    implementation "com.sekwah:SekCLib-26.3:2.0.0"
+    implementation "com.sekwah:SekCLib:0.1.0"
 }
 ```
 
@@ -140,7 +140,7 @@ dependencies {
 [[dependencies.your_mod_id]]
     modId="sekclib"
     type="required"
-    versionRange="[2.0.0,3.0.0)"
+    versionRange="[0.1.0,1.0.0)"
     ordering="AFTER"
     side="BOTH"
 ```
@@ -165,8 +165,8 @@ cd SekCLib
 ```
 
 The resulting jars will be placed in `build/libs/`:
-- `SekCLib-26.3-2.0.0.jar` (universal mod jar)
-- `SekCLib-26.3-2.0.0-sources.jar` (source code)
+- `SekCLib-0.1.0.jar` (universal mod jar)
+- `SekCLib-0.1.0-sources.jar` (source code)
 
 ---
 

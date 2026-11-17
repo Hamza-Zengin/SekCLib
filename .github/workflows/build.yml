@@ -36,7 +36,7 @@ jobs:
       - name: Upload Playable Mod Jar
         uses: actions/upload-artifact@v4
         with:
-          name: SekCLib-26.3-2.0.0
+          name: SekCLib-0.1.0
           path: |
             build/libs/SekCLib-*.jar
             !build/libs/*-sources.jar
@@ -44,6 +44,6 @@ jobs:
       - name: Upload Source Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: SekCLib-26.3-2.0.0-sources
+          name: SekCLib-0.1.0-sources
           path: |
             build/libs/*-sources.jar
