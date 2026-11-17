@@ -15,6 +15,9 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 @EventBusSubscriber(modid = SekCLib.MOD_ID)
@@ -30,7 +33,32 @@ public class SyncDataCapabilityHandler {
     public static void onPlayerUpdate(PlayerTickEvent.Post event) {
         if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof ServerPlayer serverPlayer) {
             CapabilityBroadcaster.checkCapData(serverPlayer);
+            checkSpectatorCamera(serverPlayer);
         }
+    }
+
+    /** Last camera entity id a spectator was attached to, used to detect camera target changes. */
+    private static final Map<UUID, Integer> SPECTATOR_CAMERA = new ConcurrentHashMap<>();
+
+    /**
+     * When a spectator starts viewing another player, send that player's full data (including private
+     * entries) so UI that depends on it works in spectator mode.
+     */
+    private static void checkSpectatorCamera(ServerPlayer spectator) {
+        if (!spectator.isSpectator() || spectator.getCamera() == spectator) {
+            SPECTATOR_CAMERA.remove(spectator.getUUID());
+            return;
+        }
+        int cameraId = spectator.getCamera().getId();
+        Integer previous = SPECTATOR_CAMERA.put(spectator.getUUID(), cameraId);
+        if ((previous == null || previous != cameraId) && spectator.getCamera() instanceof ServerPlayer target) {
+            CapabilityBroadcaster.broadcastFullToSpectator(target, spectator);
+        }
+    }
+
+    @SubscribeEvent
+    public static void playerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        SPECTATOR_CAMERA.remove(event.getEntity().getUUID());
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)

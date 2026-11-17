@@ -30,6 +30,9 @@ jobs:
       - name: Run Tests
         run: ./gradlew test
 
+      - name: Run GameTests
+        run: ./gradlew runGameTestServer
+
       - name: Build with Gradle
         run: ./gradlew build -PisRelease=true
 

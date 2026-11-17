@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.1.0] - 2026-11-17
+
+### ⚠ BREAKING CHANGES
+
+* **Paket yolu düzleştirildi:** `com.sekwah.sekclib.capabilitysync.capabilitysync.*` artık `com.sekwah.sekclib.capabilitysync.*`. Eski import'ları güncellemeniz gerekir:
+  ```java
+  // Eski
+  import com.sekwah.sekclib.capabilitysync.capabilitysync.annotation.Sync;
+  // Yeni
+  import com.sekwah.sekclib.capabilitysync.annotation.Sync;
+  ```
+* **Platform değişti:** Kütüphane artık Minecraft 26.3 / NeoForge 26.3.0.83+ / Java 25 hedefler. Aşağıdaki eski 1.x sürümleri (Minecraft 1.20+) ile uyumlu değildir.
+
+### Features ✨
+
+* **Spectator senkronizasyonu:** `@Sync` ile işaretli, global olmayan (private) alanlar artık oyuncuyu kamera ile izleyen spectator oyunculara da gönderilir. İzlemeye başlanınca tam durum, sonrasında değişiklikler iletilir.
+
+### Diğer
+
+* `gameTestServer` çalıştırma yapılandırması eklendi.
+* README'deki Forge/NeoForge ifadeleri düzeltildi.
+
 ## [1.0.2](https://github.com/sekwah41/SekCLib/compare/v1.0.1...v1.0.2) (2023-06-22)
 
 

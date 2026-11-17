@@ -129,6 +129,11 @@ public class CapabilityBroadcaster {
             if (!forOthers.capabilityData.isEmpty()) {
                 SekCPacketHandler.sendToTracking(forOthers, entity);
             }
+            // Spectators currently viewing this player through their camera also receive private data
+            // so the target's UI can be rendered from the spectator's perspective.
+            for (ServerPlayer spectator : getSpectators(serverPlayer)) {
+                SekCPacketHandler.sendToPlayer(new ClientCapabilitySyncPacket(entity, dataToSend, true), spectator);
+            }
         } else {
             // When only globally visible capabilities change, send a single packet to TRACKING_ENTITY_AND_SELF
             ClientCapabilitySyncPacket packet = new ClientCapabilitySyncPacket(entity, dataToSend, false);
@@ -148,6 +153,40 @@ public class CapabilityBroadcaster {
         ClientCapabilitySyncPacket forOthers = new ClientCapabilitySyncPacket(entity, dataToSend, false);
         if (!forOthers.capabilityData.isEmpty()) {
             SekCPacketHandler.sendToPlayer(forOthers, player);
+        }
+    }
+
+    /**
+     * Players in spectator mode whose camera is currently attached to the given player.
+     *
+     * @param target the player being spectated
+     * @return the spectating players, never null
+     */
+    public static List<ServerPlayer> getSpectators(ServerPlayer target) {
+        List<ServerPlayer> spectators = new ArrayList<>();
+        for (ServerPlayer other : target.level().players()) {
+            if (other != target && other.isSpectator() && other.getCamera() == target) {
+                spectators.add(other);
+            }
+        }
+        return spectators;
+    }
+
+    /**
+     * Send the full state, including private entries, of the target to a spectator that has just
+     * started viewing them.
+     *
+     * @param target    the player being spectated
+     * @param spectator the spectating player
+     */
+    public static void broadcastFullToSpectator(ServerPlayer target, ServerPlayer spectator) {
+        List<CapabilityInfo> dataToSend = collectEntries(target, true);
+        if (dataToSend.isEmpty()) {
+            return;
+        }
+        ClientCapabilitySyncPacket packet = new ClientCapabilitySyncPacket(target, dataToSend, true);
+        if (!packet.capabilityData.isEmpty()) {
+            SekCPacketHandler.sendToPlayer(packet, spectator);
         }
     }
 }

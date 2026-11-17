@@ -25,18 +25,32 @@ public class SekCPacketHandler {
     }
 
     public static void sendToPlayer(CustomPacketPayload payload, ServerPlayer player) {
-        PacketDistributor.sendToPlayer(player, payload);
+        if (player.connection != null && player.connection.hasChannel(payload)) {
+            PacketDistributor.sendToPlayer(player, payload);
+        }
     }
 
     public static void sendToAll(CustomPacketPayload payload) {
-        PacketDistributor.sendToAllPlayers(payload);
+        try {
+            PacketDistributor.sendToAllPlayers(payload);
+        } catch (UnsupportedOperationException ignored) {
+            // Clients without the SekCLib channel (e.g., mock test players) are skipped.
+        }
     }
 
     public static void sendToTracking(CustomPacketPayload payload, LivingEntity entity) {
-        PacketDistributor.sendToPlayersTrackingEntity(entity, payload);
+        try {
+            PacketDistributor.sendToPlayersTrackingEntity(entity, payload);
+        } catch (UnsupportedOperationException ignored) {
+            // Clients without the SekCLib channel (e.g., mock test players) are skipped.
+        }
     }
 
     public static void sendToTrackingAndSelf(CustomPacketPayload payload, LivingEntity entity) {
-        PacketDistributor.sendToPlayersTrackingEntityAndSelf(entity, payload);
+        try {
+            PacketDistributor.sendToPlayersTrackingEntityAndSelf(entity, payload);
+        } catch (UnsupportedOperationException ignored) {
+            // Clients without the SekCLib channel (e.g., mock test players) are skipped.
+        }
     }
 }

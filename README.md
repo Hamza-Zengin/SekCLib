@@ -4,7 +4,7 @@
 
 ![SekCLib Logo](logo.png)
 
-**A lightweight, high-performance Minecraft Forge networking and capability synchronization library.**
+**A lightweight, high-performance Minecraft NeoForge networking and capability synchronization library.**
 
 [![Minecraft](https://img.shields.io/badge/Minecraft-26.3-brightgreen.svg)](https://minecraft.net/)
 [![NeoForge](https://img.shields.io/badge/NeoForge-26.3.0.83+-orange.svg)](https://neoforged.net/)
