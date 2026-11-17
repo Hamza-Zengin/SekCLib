@@ -116,7 +116,10 @@ public class SekCLibGameTests {
         ServerPlayer target = helper.makeMockServerPlayerInLevel();
         ServerPlayer spectator = (ServerPlayer) helper.makeMockServerPlayer(GameType.SPECTATOR);
         spectator.connection = target.connection;
+        helper.getLevel().addNewPlayer(spectator);
         ServerPlayer survivalOther = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
+        survivalOther.connection = target.connection;
+        helper.getLevel().addNewPlayer(survivalOther);
 
         helper.assertTrue(CapabilityBroadcaster.getSpectators(target).isEmpty(),
                 "No spectators should be returned before camera is attached");
