@@ -112,13 +112,9 @@ public class SekCLibGameTests {
     }
 
     private static void testSpectatorLookup(GameTestHelper helper) {
-        ServerPlayer target = helper.makeMockServerPlayerInLevel();
-        ServerPlayer spectator = helper.makeMockServerPlayerInLevel();
-        ServerPlayer survivalOther = helper.makeMockServerPlayerInLevel();
-
-        target.setGameMode(GameType.SURVIVAL);
-        survivalOther.setGameMode(GameType.SURVIVAL);
-        spectator.setGameMode(GameType.SPECTATOR);
+        ServerPlayer target = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
+        ServerPlayer spectator = (ServerPlayer) helper.makeMockServerPlayer(GameType.SPECTATOR);
+        ServerPlayer survivalOther = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
 
         helper.assertTrue(CapabilityBroadcaster.getSpectators(target).isEmpty(),
                 "No spectators should be returned before camera is attached");
