@@ -1,6 +1,6 @@
 package com.sekwah.sekclib;
 
-import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.implemented.*;
+import com.sekwah.sekclib.capabilitysync.tracker.implemented.*;
 import io.netty.buffer.Unpooled;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -228,8 +228,8 @@ public class SyncTrackerTest {
 
     @Test
     void testSyncTrackerDataLiveValue() {
-        com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.SyncTrackerData liveTrackerData =
-                new com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.SyncTrackerData(null, "active_live_data");
+        com.sekwah.sekclib.capabilitysync.tracker.SyncTrackerData liveTrackerData =
+                new com.sekwah.sekclib.capabilitysync.tracker.SyncTrackerData(null, "active_live_data");
         assertNotNull(liveTrackerData.getSendValue());
         assertEquals("active_live_data", liveTrackerData.getSendValue());
     }

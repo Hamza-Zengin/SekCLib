@@ -1,14 +1,14 @@
-package com.sekwah.sekclib.capabilitysync.capabilitysync.broadcaster;
+package com.sekwah.sekclib.capabilitysync.broadcaster;
 
 import com.sekwah.sekclib.SekCLib;
 import com.sekwah.sekclib.capabilitysync.CapabilityEntry;
 import com.sekwah.sekclib.capabilitysync.SyncEntry;
 import com.sekwah.sekclib.capabilitysync.capability.SyncData;
 import com.sekwah.sekclib.capabilitysync.capability.SyncDataCapabilityHandler;
-import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.CapabilityTracker;
-import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.ISyncTrackerData;
-import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.SyncTracker;
-import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.SyncTrackerData;
+import com.sekwah.sekclib.capabilitysync.tracker.CapabilityTracker;
+import com.sekwah.sekclib.capabilitysync.tracker.ISyncTrackerData;
+import com.sekwah.sekclib.capabilitysync.tracker.SyncTracker;
+import com.sekwah.sekclib.capabilitysync.tracker.SyncTrackerData;
 import com.sekwah.sekclib.network.SekCPacketHandler;
 import com.sekwah.sekclib.network.s2c.ClientCapabilitySyncPacket;
 import com.sekwah.sekclib.registries.SekCLibRegistries;

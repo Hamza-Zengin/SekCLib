@@ -32,7 +32,7 @@
 Annotate fields in your capability class to automatically track changes and broadcast them to tracking clients:
 
 ```java
-import com.sekwah.sekclib.capabilitysync.capabilitysync.annotation.Sync;
+import com.sekwah.sekclib.capabilitysync.annotation.Sync;
 
 public class MyPlayerData {
 

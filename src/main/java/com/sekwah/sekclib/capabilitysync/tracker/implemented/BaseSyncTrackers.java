@@ -1,8 +1,8 @@
-package com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.implemented;
+package com.sekwah.sekclib.capabilitysync.tracker.implemented;
 
 import com.google.gson.reflect.TypeToken;
 import com.sekwah.sekclib.SekCLib;
-import com.sekwah.sekclib.capabilitysync.capabilitysync.RegisterSyncTrackerTypeEvent;
+import com.sekwah.sekclib.capabilitysync.RegisterSyncTrackerTypeEvent;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;

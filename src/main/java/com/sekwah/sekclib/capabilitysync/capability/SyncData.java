@@ -2,9 +2,9 @@ package com.sekwah.sekclib.capabilitysync.capability;
 
 import com.sekwah.sekclib.capabilitysync.CapabilityEntry;
 import com.sekwah.sekclib.capabilitysync.SyncEntry;
-import com.sekwah.sekclib.capabilitysync.capabilitysync.CapabilitySyncRegistry;
-import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.CapabilityTracker;
-import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.SyncTracker;
+import com.sekwah.sekclib.capabilitysync.CapabilitySyncRegistry;
+import com.sekwah.sekclib.capabilitysync.tracker.CapabilityTracker;
+import com.sekwah.sekclib.capabilitysync.tracker.SyncTracker;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.neoforge.attachment.AttachmentType;
 
