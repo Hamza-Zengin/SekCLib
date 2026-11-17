@@ -137,6 +137,7 @@ public class SekCLibGameTests {
         helper.succeed();
     }
 
+    @SuppressWarnings("removal")
     private static void testTrackerSync(GameTestHelper helper) {
         ServerPlayer target = helper.makeMockServerPlayerInLevel();
         TestSyncCap cap = target.getData(TEST_CAP.get());
@@ -152,8 +153,13 @@ public class SekCLibGameTests {
 
         cap.privateChakra = 42;
         cap.globalFlag = 7;
-        privateTracker.tick(cap);
-        globalTracker.tick(cap);
+        try {
+            privateTracker.tick(cap);
+            globalTracker.tick(cap);
+        } catch (Throwable t) {
+            helper.fail("SyncTracker.tick threw unexpected error: " + t.getMessage());
+            return;
+        }
 
         helper.assertTrue(privateTracker.isMarkedForSend(), "Changed privateChakra must be marked for send");
         helper.assertTrue(globalTracker.isMarkedForSend(), "Changed globalFlag must be marked for send");
@@ -163,6 +169,7 @@ public class SekCLibGameTests {
         helper.succeed();
     }
 
+    @SuppressWarnings("removal")
     private static void testMinTicksThrottle(GameTestHelper helper) {
         ServerPlayer target = helper.makeMockServerPlayerInLevel();
         TestSyncCap cap = target.getData(TEST_CAP.get());
@@ -172,19 +179,24 @@ public class SekCLibGameTests {
         SyncTracker throttled = findTracker(syncData, "throttledValue");
         helper.assertTrue(throttled != null, "throttledValue tracker must be registered");
 
-        // Initial tick synchronizes baseline
-        cap.throttledValue = 1;
-        throttled.tick(cap);
-        throttled.markSentValue(1);
+        try {
+            // Initial tick synchronizes baseline
+            cap.throttledValue = 1;
+            throttled.tick(cap);
+            throttled.markSentValue(1);
 
-        // Next change within minTicks=3 window should not immediately mark for send
-        cap.throttledValue = 2;
-        throttled.tick(cap);
-        boolean markedEarly = throttled.isMarkedForSend();
-        helper.assertFalse(markedEarly, "throttledValue should not send before minTicks=3 elapses");
+            // Next change within minTicks=3 window should not immediately mark for send
+            cap.throttledValue = 2;
+            throttled.tick(cap);
+            boolean markedEarly = throttled.isMarkedForSend();
+            helper.assertFalse(markedEarly, "throttledValue should not send before minTicks=3 elapses");
 
-        throttled.tick(cap);
-        throttled.tick(cap);
+            throttled.tick(cap);
+            throttled.tick(cap);
+        } catch (Throwable t) {
+            helper.fail("SyncTracker.tick threw unexpected error: " + t.getMessage());
+            return;
+        }
         helper.assertTrue(throttled.isMarkedForSend(), "throttledValue should mark for send after minTicks=3");
 
         helper.succeed();
