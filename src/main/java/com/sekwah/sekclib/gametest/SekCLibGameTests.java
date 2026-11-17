@@ -111,9 +111,11 @@ public class SekCLibGameTests {
         );
     }
 
+    @SuppressWarnings("removal")
     private static void testSpectatorLookup(GameTestHelper helper) {
-        ServerPlayer target = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
+        ServerPlayer target = helper.makeMockServerPlayerInLevel();
         ServerPlayer spectator = (ServerPlayer) helper.makeMockServerPlayer(GameType.SPECTATOR);
+        spectator.connection = target.connection;
         ServerPlayer survivalOther = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
 
         helper.assertTrue(CapabilityBroadcaster.getSpectators(target).isEmpty(),
