@@ -29,9 +29,9 @@ jobs:
 
       - name: Inspect GameTest API
         run: |
-          ./gradlew --init-script <(echo 'allprojects { afterEvaluate { tasks.register("printCp") { doLast { println configurations.compileClasspath.asPath } } } }') printCp -q > cp.txt
-          CP=$(tail -1 cp.txt)
-          javap -cp "$CP" net.neoforged.neoforge.event.RegisterGameTestsEvent net.minecraft.gametest.framework.GameTestHelper net.minecraft.gametest.framework.FunctionGameTestInstance net.minecraft.gametest.framework.TestData net.minecraft.gametest.framework.GameTestInstance net.minecraft.gametest.framework.TestEnvironmentDefinition || true
+          ./gradlew compileJava
+          JARS=$(find ~/.gradle/caches -name '*.jar' | tr '\n' ':')
+          javap -cp "$JARS" net.neoforged.neoforge.event.RegisterGameTestsEvent net.minecraft.gametest.framework.GameTestHelper net.minecraft.gametest.framework.FunctionGameTestInstance net.minecraft.gametest.framework.TestData net.minecraft.gametest.framework.GameTestInstance net.minecraft.gametest.framework.TestEnvironmentDefinition || true
 
       - name: Run Tests
         run: ./gradlew test
