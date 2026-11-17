@@ -20,8 +20,9 @@ public @interface Sync {
     int minTicks() default 3;
 
     /**
-     * Should this be synced with other players
-     * TODO check if the player is spectating another player and send the data. This will sync UI while in spectator mode.
+     * Should this be synced with other players.
+     * Fields that are not global are only sent to the owner, plus any spectator currently viewing the owner
+     * through their camera so UI can be shown in spectator mode.
      * @return
      */
     boolean syncGlobally() default false;
