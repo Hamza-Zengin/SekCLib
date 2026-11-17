@@ -193,9 +193,9 @@ public class SekCLibGameTests {
     private static SyncTracker findTracker(SyncData syncData, String fieldName) {
         for (CapabilityTracker ct : syncData.getCapabilityTrackers()) {
             CapabilityEntry entry = ct.getCapabilityEntry();
-            if (entry != null && entry.getRegistryName().getPath().equals("test_sync_cap")) {
+            if (entry != null && entry.getResourceSyncName().getPath().equals("test_sync_cap")) {
                 for (SyncTracker st : ct.getSyncTrackers()) {
-                    if (st.getSyncEntry().getVarName().equals(fieldName)) {
+                    if (st.getSyncEntry().getName().equals(fieldName)) {
                         return st;
                     }
                 }
