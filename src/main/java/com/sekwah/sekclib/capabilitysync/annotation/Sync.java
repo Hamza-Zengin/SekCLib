@@ -1,4 +1,4 @@
-package com.sekwah.sekclib.capabilitysync.capabilitysync.annotation;
+package com.sekwah.sekclib.capabilitysync.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

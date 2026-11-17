@@ -1,10 +1,8 @@
-package com.sekwah.sekclib.capabilitysync.capabilitysync;
+package com.sekwah.sekclib.capabilitysync;
 
 import com.sekwah.sekclib.SekCLib;
-import com.sekwah.sekclib.capabilitysync.CapabilityEntry;
-import com.sekwah.sekclib.capabilitysync.SyncEntry;
-import com.sekwah.sekclib.capabilitysync.capabilitysync.annotation.Sync;
-import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.SyncTrackerSerializer;
+import com.sekwah.sekclib.capabilitysync.annotation.Sync;
+import com.sekwah.sekclib.capabilitysync.tracker.SyncTrackerSerializer;
 import com.sekwah.sekclib.registries.SekCLibRegistries;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.Identifier;

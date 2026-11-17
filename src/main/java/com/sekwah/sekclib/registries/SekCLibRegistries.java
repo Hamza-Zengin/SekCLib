@@ -2,8 +2,8 @@ package com.sekwah.sekclib.registries;
 
 import com.sekwah.sekclib.SekCLib;
 import com.sekwah.sekclib.capabilitysync.CapabilityEntry;
-import com.sekwah.sekclib.capabilitysync.capabilitysync.RegisterCapabilitySyncEvent;
-import com.sekwah.sekclib.capabilitysync.capabilitysync.RegisterSyncTrackerTypeEvent;
+import com.sekwah.sekclib.capabilitysync.RegisterCapabilitySyncEvent;
+import com.sekwah.sekclib.capabilitysync.RegisterSyncTrackerTypeEvent;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;

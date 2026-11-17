@@ -1,7 +1,7 @@
 package com.sekwah.sekclib.capabilitysync.capability;
 
 import com.sekwah.sekclib.SekCLib;
-import com.sekwah.sekclib.capabilitysync.capabilitysync.broadcaster.CapabilityBroadcaster;
+import com.sekwah.sekclib.capabilitysync.broadcaster.CapabilityBroadcaster;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;

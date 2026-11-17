@@ -1,10 +1,10 @@
 package com.sekwah.sekclib;
 
 import com.sekwah.sekclib.capabilitysync.SyncEntry;
-import com.sekwah.sekclib.capabilitysync.capabilitysync.broadcaster.CapabilityInfo;
-import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.SyncTracker;
-import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.implemented.IntSyncTracker;
-import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.implemented.StringSetSyncTracker;
+import com.sekwah.sekclib.capabilitysync.broadcaster.CapabilityInfo;
+import com.sekwah.sekclib.capabilitysync.tracker.SyncTracker;
+import com.sekwah.sekclib.capabilitysync.tracker.implemented.IntSyncTracker;
+import com.sekwah.sekclib.capabilitysync.tracker.implemented.StringSetSyncTracker;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the core tracking, minTicks throttling, cloning, and global/private
- * partitioning logic used by {@link com.sekwah.sekclib.capabilitysync.capabilitysync.broadcaster.CapabilityBroadcaster}.
+ * partitioning logic used by {@link com.sekwah.sekclib.capabilitysync.broadcaster.CapabilityBroadcaster}.
  */
 public class CapabilityBroadcasterTest {
 

@@ -20,7 +20,7 @@ This can be used if you can accurately update client side but want to just re-sy
 The following is an example with two supported types of data, and a custom one registered via the RegisterSyncTrackerTypeEvent.
 ```java
 
-import com.sekwah.sekclib.capabilitysync.capabilitysync.annotation.Sync;
+import com.sekwah.sekclib.capabilitysync.annotation.Sync;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 
 public class ExampleCapability implements IExampleCapability, ICapabilityProvider {
@@ -58,7 +58,7 @@ public class NarutoSyncTrackers {
 ```
 
 ## @Sync Attributes
-You can further customise the way that the [@Sync](https://github.com/sekwah41/SekCLib/blob/master/src/main/java/com/sekwah/sekclib/capabilitysync/capabilitysync/annotation/Sync.java) annotation works by adding attributes to the annotation.
+You can further customise the way that the [@Sync](https://github.com/sekwah41/SekCLib/blob/master/src/main/java/com/sekwah/sekclib/capabilitysync/annotation/Sync.java) annotation works by adding attributes to the annotation.
 For the most part the names should be relatively self-explanatory.
 
 ### int minTicks
@@ -147,7 +147,7 @@ public class ToggleAbilityDataSyncTracker implements SyncTrackerSerializer<Toggl
 
 ### SyncTrackerUpdater
 For some objects you may not want to replace the object every time to keep references to other objects you have created. While we do not currently have an example though the interface for
-[SyncTrackerUpdater](https://github.com/sekwah41/SekCLib/blob/master/src/main/java/com/sekwah/sekclib/capabilitysync/capabilitysync/tracker/SyncTrackerUpdater.java)
+[SyncTrackerUpdater](https://github.com/sekwah41/SekCLib/blob/master/src/main/java/com/sekwah/sekclib/capabilitysync/tracker/SyncTrackerUpdater.java)
 should be pretty self-explanatory.
 
 You likely will not need to use this though it is there just in case.

@@ -1,6 +1,5 @@
-package com.sekwah.sekclib.capabilitysync.capabilitysync;
+package com.sekwah.sekclib.capabilitysync;
 
-import com.sekwah.sekclib.capabilitysync.CapabilityEntry;
 import net.minecraft.resources.Identifier;
 import net.neoforged.bus.api.Event;
 import net.neoforged.fml.event.IModBusEvent;

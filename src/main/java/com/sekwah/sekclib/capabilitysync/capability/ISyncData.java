@@ -1,6 +1,6 @@
 package com.sekwah.sekclib.capabilitysync.capability;
 
-import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.CapabilityTracker;
+import com.sekwah.sekclib.capabilitysync.tracker.CapabilityTracker;
 
 import java.util.List;
 

@@ -1,6 +1,6 @@
-package com.sekwah.sekclib.capabilitysync.capabilitysync;
+package com.sekwah.sekclib.capabilitysync;
 
-import com.sekwah.sekclib.capabilitysync.capabilitysync.tracker.SyncTrackerSerializer;
+import com.sekwah.sekclib.capabilitysync.tracker.SyncTrackerSerializer;
 import net.neoforged.bus.api.Event;
 import net.neoforged.fml.event.IModBusEvent;
 
