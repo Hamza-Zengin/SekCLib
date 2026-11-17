@@ -1,6 +1,7 @@
 package com.sekwah.sekclib;
 
 import com.sekwah.sekclib.capabilitysync.capability.SyncDataCapabilityHandler;
+import com.sekwah.sekclib.gametest.SekCLibGameTests;
 import com.sekwah.sekclib.registries.SekCLibRegistries;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -19,6 +20,7 @@ public class SekCLib {
         SyncDataCapabilityHandler.ATTACHMENT_TYPES.register(modEventBus);
         modEventBus.addListener(SekCLibRegistries::registerRegistries);
         modEventBus.addListener(SekCLibRegistries::registerCapabilityEntries);
+        SekCLibGameTests.register(modEventBus);
     }
 
 }

@@ -164,10 +164,7 @@ public class CapabilityBroadcaster {
      */
     public static List<ServerPlayer> getSpectators(ServerPlayer target) {
         List<ServerPlayer> spectators = new ArrayList<>();
-        if (target.level().getServer() == null) {
-            return spectators;
-        }
-        for (ServerPlayer other : target.level().getServer().getPlayerList().getPlayers()) {
+        for (ServerPlayer other : target.level().players()) {
             if (other != target && other.isSpectator() && other.getCamera() == target) {
                 spectators.add(other);
             }

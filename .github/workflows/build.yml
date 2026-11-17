@@ -27,14 +27,11 @@ jobs:
           distribution: 'zulu'
           java-version: 25
 
-      - name: Inspect GameTest API
-        run: |
-          ./gradlew compileJava
-          JARS=$(find ~/.gradle/caches/modules-2 build -name '*26.3*.jar' 2>/dev/null | tr '\n' ':')
-          javap -cp "$JARS" net.minecraft.gametest.framework.GameTestHelper net.minecraft.gametest.framework.TestEnvironmentDefinition\$AllOf net.minecraft.core.registries.Registries | grep -E "Compiled from|class |interface |succeed|fail|assert|makeMock|Player|runAfter|AllOf|TEST_FUNCTION|TEST_INSTANCE" || true
-
       - name: Run Tests
         run: ./gradlew test
+
+      - name: Run GameTests
+        run: ./gradlew runGameTestServer
 
       - name: Build with Gradle
         run: ./gradlew build -PisRelease=true
