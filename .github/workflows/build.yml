@@ -31,7 +31,7 @@ jobs:
         run: |
           ./gradlew compileJava
           JARS=$(find ~/.gradle/caches/modules-2 build -name '*26.3*.jar' 2>/dev/null | tr '\n' ':')
-          javap -cp "$JARS" net.neoforged.neoforge.event.RegisterGameTestsEvent net.minecraft.gametest.framework.FunctionGameTestInstance net.minecraft.gametest.framework.TestData net.minecraft.gametest.framework.GameTestInstance net.minecraft.gametest.framework.TestEnvironmentDefinition || true
+          javap -cp "$JARS" net.minecraft.gametest.framework.GameTestHelper net.minecraft.gametest.framework.TestEnvironmentDefinition\$AllOf net.minecraft.core.registries.Registries | grep -E "Compiled from|class |interface |succeed|fail|assert|makeMock|Player|runAfter|AllOf|TEST_FUNCTION|TEST_INSTANCE" || true
 
       - name: Run Tests
         run: ./gradlew test
