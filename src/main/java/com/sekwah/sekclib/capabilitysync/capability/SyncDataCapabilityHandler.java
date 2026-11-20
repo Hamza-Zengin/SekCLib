@@ -46,7 +46,9 @@ public class SyncDataCapabilityHandler {
      */
     private static void checkSpectatorCamera(ServerPlayer spectator) {
         if (!spectator.isSpectator() || spectator.getCamera() == spectator) {
-            SPECTATOR_CAMERA.remove(spectator.getUUID());
+            if (!SPECTATOR_CAMERA.isEmpty()) {
+                SPECTATOR_CAMERA.remove(spectator.getUUID());
+            }
             return;
         }
         int cameraId = spectator.getCamera().getId();
@@ -58,7 +60,9 @@ public class SyncDataCapabilityHandler {
 
     @SubscribeEvent
     public static void playerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        SPECTATOR_CAMERA.remove(event.getEntity().getUUID());
+        if (!SPECTATOR_CAMERA.isEmpty()) {
+            SPECTATOR_CAMERA.remove(event.getEntity().getUUID());
+        }
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)

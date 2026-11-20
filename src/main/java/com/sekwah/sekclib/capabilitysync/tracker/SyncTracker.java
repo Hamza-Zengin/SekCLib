@@ -38,17 +38,18 @@ public class SyncTracker implements ISyncTrackerData {
      */
     public void tick(Object data) throws Throwable {
         if(--this.minTicksLeft <= 0) {
-            Object currentData = syncEntry.getGetter().invoke(data);
+            Object currentData = this.syncEntry.getValue(data);
             if(this.shouldSend(currentData)) {
                 this.markedForSend = true;
-                if(syncEntry.getSerializer() instanceof SyncTrackerClone cloner) {
-                    this.sendValue = cloner.clone(currentData);
+                if(this.syncEntry.isCloneableSerializer()) {
+                    this.sendValue = ((SyncTrackerClone) this.syncEntry.getSerializer()).clone(currentData);
                 } else {
                     this.sendValue = currentData;
                 }
                 this.minTicksLeft = this.syncEntry.getMinTicks();
             } else {
                 this.markedForSend = false;
+                this.minTicksLeft = 0;
             }
         } else {
             this.markedForSend = false;
@@ -65,8 +66,8 @@ public class SyncTracker implements ISyncTrackerData {
     }
 
     public void markSentValue(Object currentData) {
-        if (this.syncEntry != null && this.syncEntry.getSerializer() instanceof SyncTrackerClone cloner) {
-            this.sendValue = cloner.clone(currentData);
+        if (this.syncEntry != null && this.syncEntry.isCloneableSerializer()) {
+            this.sendValue = ((SyncTrackerClone) this.syncEntry.getSerializer()).clone(currentData);
         } else {
             this.sendValue = currentData;
         }
@@ -91,5 +92,9 @@ public class SyncTracker implements ISyncTrackerData {
 
     public boolean isMarkedForSend() {
         return markedForSend;
+    }
+
+    public int getMinTicksLeft() {
+        return minTicksLeft;
     }
 }

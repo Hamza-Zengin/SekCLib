@@ -1,5 +1,7 @@
 package com.sekwah.sekclib;
 
+import com.sekwah.sekclib.capabilitysync.SyncEntry;
+import com.sekwah.sekclib.capabilitysync.tracker.SyncTracker;
 import com.sekwah.sekclib.capabilitysync.tracker.implemented.*;
 import io.netty.buffer.Unpooled;
 import net.minecraft.nbt.CompoundTag;
@@ -8,6 +10,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -232,5 +235,134 @@ public class SyncTrackerTest {
                 new com.sekwah.sekclib.capabilitysync.tracker.SyncTrackerData(null, "active_live_data");
         assertNotNull(liveTrackerData.getSendValue());
         assertEquals("active_live_data", liveTrackerData.getSendValue());
+    }
+
+    public static class SyncEntryTestTarget {
+        public int intVal = 10;
+        public float floatVal = 1.5f;
+        public boolean boolVal = false;
+        public byte byteVal = 7;
+        public double doubleVal = 2.75;
+        public long longVal = 123456789L;
+        public String stringVal = "initial";
+        public Identifier idVal = Identifier.fromNamespaceAndPath("sekclib", "initial");
+        public Vec3 vecVal = new Vec3(1.0, 2.0, 3.0);
+        public Set<String> stringSet = new HashSet<>(Set.of("alpha"));
+        public Set<Identifier> idSet = new HashSet<>(Set.of(Identifier.fromNamespaceAndPath("sekclib", "one")));
+        private int privateIntVal = 42;
+    }
+
+    @Test
+    void testSyncEntryGetAndSetValuePrimitivesObjectsAndCollections() throws Throwable {
+        SyncEntryTestTarget target = new SyncEntryTestTarget();
+
+        SyncEntry intEntry = new SyncEntry("intVal", SyncEntryTestTarget.class.getField("intVal"), 0, 0, true, new IntSyncTracker());
+        assertEquals(10, intEntry.getValue(target));
+        intEntry.setValue(target, 99);
+        assertEquals(99, target.intVal);
+        assertEquals(99, intEntry.getValue(target));
+        assertFalse(intEntry.isCloneableSerializer());
+
+        SyncEntry floatEntry = new SyncEntry("floatVal", SyncEntryTestTarget.class.getField("floatVal"), 1, 1, false, new FloatSyncTracker());
+        assertEquals(1.5f, (Float) floatEntry.getValue(target), 0.0001f);
+        floatEntry.setValue(target, 42.25f);
+        assertEquals(42.25f, target.floatVal, 0.0001f);
+        assertEquals(42.25f, (Float) floatEntry.getValue(target), 0.0001f);
+
+        SyncEntry boolEntry = new SyncEntry("boolVal", SyncEntryTestTarget.class.getField("boolVal"), 0, 2, true, new BoolSyncTracker());
+        assertEquals(false, boolEntry.getValue(target));
+        boolEntry.setValue(target, true);
+        assertTrue(target.boolVal);
+        assertEquals(true, boolEntry.getValue(target));
+
+        SyncEntry byteEntry = new SyncEntry("byteVal", SyncEntryTestTarget.class.getField("byteVal"), 0, 3, true, new ByteSyncTracker());
+        assertEquals((byte) 7, byteEntry.getValue(target));
+        byteEntry.setValue(target, (byte) -5);
+        assertEquals((byte) -5, target.byteVal);
+
+        SyncEntry doubleEntry = new SyncEntry("doubleVal", SyncEntryTestTarget.class.getField("doubleVal"), 0, 4, true, null);
+        assertEquals(2.75, (Double) doubleEntry.getValue(target), 0.0001);
+        doubleEntry.setValue(target, -12.5);
+        assertEquals(-12.5, target.doubleVal, 0.0001);
+        assertFalse(doubleEntry.isCloneableSerializer());
+
+        SyncEntry longEntry = new SyncEntry("longVal", SyncEntryTestTarget.class.getField("longVal"), 0, 5, true, null);
+        assertEquals(123456789L, longEntry.getValue(target));
+        longEntry.setValue(target, 987654321L);
+        assertEquals(987654321L, target.longVal);
+
+        SyncEntry stringEntry = new SyncEntry("stringVal", SyncEntryTestTarget.class.getField("stringVal"), 0, 6, true, new StringSyncTracker());
+        assertEquals("initial", stringEntry.getValue(target));
+        stringEntry.setValue(target, "updated");
+        assertEquals("updated", target.stringVal);
+        stringEntry.setValue(target, null);
+        assertNull(target.stringVal);
+        assertNull(stringEntry.getValue(target));
+        assertFalse(stringEntry.isCloneableSerializer());
+
+        Identifier updatedId = Identifier.fromNamespaceAndPath("sekclib", "updated");
+        SyncEntry idEntry = new SyncEntry("idVal", SyncEntryTestTarget.class.getField("idVal"), 0, 7, true, new IdentifierSyncTracker());
+        assertEquals(Identifier.fromNamespaceAndPath("sekclib", "initial"), idEntry.getValue(target));
+        idEntry.setValue(target, updatedId);
+        assertEquals(updatedId, target.idVal);
+
+        Vec3 updatedVec = new Vec3(-3.0, 6.0, 9.0);
+        SyncEntry vecEntry = new SyncEntry("vecVal", SyncEntryTestTarget.class.getField("vecVal"), 0, 8, true, new Vec3SyncTracker());
+        assertEquals(new Vec3(1.0, 2.0, 3.0), vecEntry.getValue(target));
+        vecEntry.setValue(target, updatedVec);
+        assertEquals(updatedVec, target.vecVal);
+
+        Set<String> newStringSet = new HashSet<>(Set.of("beta", "gamma"));
+        SyncEntry stringSetEntry = new SyncEntry("stringSet", SyncEntryTestTarget.class.getField("stringSet"), 0, 9, false, new StringSetSyncTracker());
+        assertEquals(Set.of("alpha"), stringSetEntry.getValue(target));
+        stringSetEntry.setValue(target, newStringSet);
+        assertEquals(Set.of("beta", "gamma"), target.stringSet);
+        assertTrue(stringSetEntry.isCloneableSerializer());
+
+        Set<Identifier> newIdSet = new HashSet<>(Set.of(updatedId));
+        SyncEntry idSetEntry = new SyncEntry("idSet", SyncEntryTestTarget.class.getField("idSet"), 0, 10, false, new IdentifierSetSyncTracker());
+        assertEquals(Set.of(Identifier.fromNamespaceAndPath("sekclib", "one")), idSetEntry.getValue(target));
+        idSetEntry.setValue(target, newIdSet);
+        assertEquals(Set.of(updatedId), target.idSet);
+        assertTrue(idSetEntry.isCloneableSerializer());
+
+        Field privateField = SyncEntryTestTarget.class.getDeclaredField("privateIntVal");
+        privateField.setAccessible(true);
+        SyncEntry privateEntry = new SyncEntry("privateIntVal", privateField, 0, 11, false, new IntSyncTracker());
+        assertEquals(42, privateEntry.getValue(target));
+        privateEntry.setValue(target, 77);
+        assertEquals(77, privateEntry.getValue(target));
+
+        // Null field safety
+        SyncEntry nullFieldEntry = new SyncEntry("missing", null, 0, 12, false, new CompoundTagSyncTracker());
+        assertNull(nullFieldEntry.getValue(target));
+        assertDoesNotThrow(() -> nullFieldEntry.setValue(target, "ignored"));
+        assertTrue(nullFieldEntry.isCloneableSerializer());
+    }
+
+    @Test
+    void testSyncTrackerMinTicksLeftClampedToZeroWhenIdle() throws Throwable {
+        SyncEntryTestTarget target = new SyncEntryTestTarget();
+        SyncEntry entry = new SyncEntry("intVal", SyncEntryTestTarget.class.getField("intVal"), 2, 0, true, new IntSyncTracker());
+        SyncTracker tracker = new SyncTracker(entry);
+
+        tracker.tick(target);
+        assertTrue(tracker.isMarkedForSend());
+        assertEquals(2, tracker.getMinTicksLeft());
+
+        // Countdown 2 -> 1 -> 0, then stays clamped at 0 on idle ticks
+        tracker.tick(target);
+        assertFalse(tracker.isMarkedForSend());
+        assertEquals(1, tracker.getMinTicksLeft());
+
+        tracker.tick(target);
+        assertFalse(tracker.isMarkedForSend());
+        assertEquals(0, tracker.getMinTicksLeft());
+
+        for (int i = 0; i < 25; i++) {
+            tracker.tick(target);
+            assertFalse(tracker.isMarkedForSend());
+            assertEquals(0, tracker.getMinTicksLeft(), "minTicksLeft must not decrement below 0 when idle");
+        }
     }
 }

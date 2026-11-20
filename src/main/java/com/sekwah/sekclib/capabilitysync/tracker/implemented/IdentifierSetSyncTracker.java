@@ -35,7 +35,7 @@ public class IdentifierSetSyncTracker implements SyncTrackerSerializer<Set<Ident
         if (size <= 0 || size > MAX_ELEMENTS) {
             return new HashSet<>();
         }
-        Set<Identifier> set = new HashSet<>(size);
+        Set<Identifier> set = HashSet.newHashSet(size);
         for (int i = 0; i < size; i++) {
             set.add(inBuffer.readIdentifier());
         }

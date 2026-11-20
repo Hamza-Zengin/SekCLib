@@ -35,7 +35,7 @@ public class StringSetSyncTracker implements SyncTrackerSerializer<Set<String>>,
         if (size <= 0 || size > MAX_ELEMENTS) {
             return new HashSet<>();
         }
-        Set<String> set = new HashSet<>(size);
+        Set<String> set = HashSet.newHashSet(size);
         for (int i = 0; i < size; i++) {
             set.add(inBuffer.readUtf(MAX_STRING_LENGTH));
         }

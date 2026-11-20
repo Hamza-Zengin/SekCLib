@@ -14,6 +14,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
@@ -37,10 +38,14 @@ public class ClientPayloadHandler {
             Entity entity = level.getEntity(msg.getEntityId());
             if (entity instanceof LivingEntity livingEntity) {
                 for (CapabilityInfo capInfo : msg.capabilityData) {
-                    if (capInfo.capability == null || capInfo.capability.getAttachmentType() == null) {
+                    if (capInfo.capability == null) {
                         continue;
                     }
-                    Object targetCap = livingEntity.getData(capInfo.capability.getAttachmentType());
+                    AttachmentType<?> attachmentType = capInfo.capability.getAttachmentType();
+                    if (attachmentType == null) {
+                        continue;
+                    }
+                    Object targetCap = livingEntity.getData(attachmentType);
                     if (targetCap == null) {
                         continue;
                     }
@@ -54,9 +59,9 @@ public class ClientPayloadHandler {
                         try {
                             Object syncValue = syncTrackerData.getSendValue();
                             if (syncTrackerData.getSyncEntry().getSerializer() instanceof SyncTrackerUpdater updater) {
-                                syncValue = updater.updateTracker(syncValue, syncEntry.getGetter().invoke(targetCap));
+                                syncValue = updater.updateTracker(syncValue, syncEntry.getValue(targetCap));
                             }
-                            syncEntry.getSetter().invoke(targetCap, syncValue);
+                            syncEntry.setValue(targetCap, syncValue);
                         } catch (Throwable e) {
                             SekCLib.LOGGER.error("There was a problem setting a value", e);
                         }
