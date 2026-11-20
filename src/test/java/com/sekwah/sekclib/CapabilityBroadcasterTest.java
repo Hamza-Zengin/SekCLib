@@ -223,4 +223,59 @@ public class CapabilityBroadcasterTest {
         assertSame(capType, entry.getAttachmentType());
         assertEquals(1, supplierCalls.get(), "AttachmentType supplier should only be resolved once");
     }
+
+    @Test
+    void testSyncDataEnsureTrackersFastPathAndNonAllocation() throws Throwable {
+        AtomicInteger hasDataCalls = new AtomicInteger();
+        Map<AttachmentType<?>, Object> attachments = new IdentityHashMap<>();
+        IAttachmentHolder countingHolder = (IAttachmentHolder) Proxy.newProxyInstance(
+                IAttachmentHolder.class.getClassLoader(),
+                new Class<?>[]{IAttachmentHolder.class},
+                (proxy, method, args) -> {
+                    String name = method.getName();
+                    if ("hasData".equals(name) && args != null && args.length == 1) {
+                        hasDataCalls.incrementAndGet();
+                        return attachments.containsKey(args[0]);
+                    }
+                    if ("getData".equals(name) && args != null && args.length == 1) {
+                        return attachments.get(args[0]);
+                    }
+                    if ("setData".equals(name) && args != null && args.length == 2) {
+                        return attachments.put((AttachmentType<?>) args[0], args[1]);
+                    }
+                    return null;
+                }
+        );
+
+        AttachmentType<DummyCapability> capType = AttachmentType.builder(DummyCapability::new).build();
+        CapabilityEntry capEntry = new CapabilityEntry(
+                Identifier.fromNamespaceAndPath("sekclib", "fast_path_cap"),
+                () -> capType,
+                DummyCapability.class
+        );
+        capEntry.addSyncEntry(new SyncEntry("globalCounter", DummyCapability.class.getField("globalCounter"), 0, 0, true, new IntSyncTracker()));
+        capEntry.addSyncEntry(new SyncEntry("privateTags", DummyCapability.class.getField("privateTags"), 0, 1, false, new StringSetSyncTracker()));
+        List<CapabilityEntry> capabilities = List.of(capEntry);
+
+        SyncData syncData = new SyncData();
+        // Empty capabilities list returns before touching holder
+        syncData.ensureTrackers(countingHolder, List.of());
+        assertEquals(0, hasDataCalls.get());
+        assertTrue(syncData.getCapabilityTrackers().isEmpty());
+
+        // Attach capability and ensure trackers are populated once
+        countingHolder.setData(capType, new DummyCapability());
+        syncData.ensureTrackers(countingHolder, capabilities);
+        assertEquals(1, hasDataCalls.get());
+        assertEquals(1, syncData.getCapabilityTrackers().size());
+        assertEquals(2, syncData.getCapabilityTrackers().get(0).getSyncTrackers().size());
+
+        // Steady-state calls must hit the early-return fast-path without looping or calling hasData
+        hasDataCalls.set(0);
+        for (int i = 0; i < 100; i++) {
+            syncData.ensureTrackers(countingHolder, capabilities);
+        }
+        assertEquals(0, hasDataCalls.get(), "ensureTrackers fast-path should skip iterating capabilities once all are tracked");
+        assertEquals(1, syncData.getCapabilityTrackers().size());
+    }
 }

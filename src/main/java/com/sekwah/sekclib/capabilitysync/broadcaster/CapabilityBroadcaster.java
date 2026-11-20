@@ -97,7 +97,11 @@ public class CapabilityBroadcaster {
         }
     }
 
-    private static List<CapabilityInfo> collectEntries(LivingEntity entity, boolean returnAll) {
+    public static List<CapabilityInfo> collectEntries(LivingEntity entity, boolean returnAll) {
+        return collectEntries(entity, returnAll, true);
+    }
+
+    private static List<CapabilityInfo> collectEntries(LivingEntity entity, boolean returnAll, boolean includePrivate) {
         if (entity == null) {
             return Collections.emptyList();
         }
@@ -118,6 +122,9 @@ public class CapabilityBroadcaster {
                 Object data = entity.getData(attachmentType);
                 for (SyncTracker syncTracker : capTracker.getSyncTrackers()) {
                     SyncEntry syncEntry = syncTracker.getSyncEntry();
+                    if (!includePrivate && !syncEntry.isSyncGlobally()) {
+                        continue;
+                    }
                     Object liveValue;
                     try {
                         liveValue = syncEntry.getValue(data);
@@ -138,6 +145,9 @@ public class CapabilityBroadcaster {
                 }
             } else {
                 for (SyncTracker syncTracker : capTracker.getSyncTrackers()) {
+                    if (!includePrivate && !syncTracker.getSyncEntry().isSyncGlobally()) {
+                        continue;
+                    }
                     if (returnAll || syncTracker.isMarkedForSend()) {
                         if (capInfo == null) {
                             capInfo = new CapabilityInfo(SekCLibRegistries.CAPABILITY_REGISTRY.getId(capEntry), capEntry);
@@ -216,7 +226,7 @@ public class CapabilityBroadcaster {
     }
 
     public static void broadcastCapToPlayer(LivingEntity entity, ServerPlayer player) {
-        List<CapabilityInfo> dataToSend = collectEntries(entity, true);
+        List<CapabilityInfo> dataToSend = collectEntries(entity, true, false);
 
         if (dataToSend.isEmpty()) {
             return;

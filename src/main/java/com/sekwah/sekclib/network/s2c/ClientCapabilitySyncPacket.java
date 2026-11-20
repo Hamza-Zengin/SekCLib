@@ -92,14 +92,19 @@ public class ClientCapabilitySyncPacket implements CustomPacketPayload {
         int trackerCount = inBuffer.readInt();
         if (trackerCount < 0 || trackerCount > MAX_SYNC_ENTRIES) {
             SekCLib.LOGGER.warn("Received invalid tracker count: {}", trackerCount);
+            inBuffer.skipBytes(inBuffer.readableBytes());
             return Collections.emptyList();
         }
         List<ISyncTrackerData> syncTrackerDataList = new ArrayList<>(trackerCount);
         for (int i = 0; i < trackerCount; i++) {
+            if (!inBuffer.isReadable()) {
+                break;
+            }
             int trackerId = inBuffer.readUnsignedByte();
             boolean hasData = inBuffer.readBoolean();
             if (capability == null || trackerId < 0 || trackerId >= capability.getSyncEntries().size()) {
                 SekCLib.LOGGER.warn("Invalid tracker id: {} for capability", trackerId);
+                inBuffer.skipBytes(inBuffer.readableBytes());
                 return syncTrackerDataList;
             }
             SyncEntry tracker = capability.getSyncEntries().get(trackerId);
@@ -128,14 +133,19 @@ public class ClientCapabilitySyncPacket implements CustomPacketPayload {
         int capCount = inBuffer.readInt();
         if (capCount < 0 || capCount > MAX_SYNC_ENTRIES) {
             SekCLib.LOGGER.warn("Received invalid capability count: {}", capCount);
+            inBuffer.skipBytes(inBuffer.readableBytes());
             return new ClientCapabilitySyncPacket(playerId, Collections.emptyList());
         }
         List<CapabilityInfo> capabilityInfoList = new ArrayList<>(capCount);
         for (int i = 0; i < capCount; i++) {
+            if (!inBuffer.isReadable()) {
+                break;
+            }
             int capId = inBuffer.readInt();
             CapabilityEntry capability = SekCLibRegistries.CAPABILITY_REGISTRY.byId(capId);
             if (capability == null) {
                 SekCLib.LOGGER.warn("Received capability sync packet for unregistered capability id: {}", capId);
+                inBuffer.skipBytes(inBuffer.readableBytes());
                 break;
             }
             List<ISyncTrackerData> syncTrackers = decodeSyncTrackers(capability, inBuffer);
