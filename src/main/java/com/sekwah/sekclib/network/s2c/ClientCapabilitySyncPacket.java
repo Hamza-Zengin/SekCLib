@@ -94,7 +94,7 @@ public class ClientCapabilitySyncPacket implements CustomPacketPayload {
             SekCLib.LOGGER.warn("Received invalid tracker count: {}", trackerCount);
             return Collections.emptyList();
         }
-        List<ISyncTrackerData> syncTrackerDataList = new ArrayList<>();
+        List<ISyncTrackerData> syncTrackerDataList = new ArrayList<>(trackerCount);
         for (int i = 0; i < trackerCount; i++) {
             int trackerId = inBuffer.readUnsignedByte();
             boolean hasData = inBuffer.readBoolean();
@@ -130,7 +130,7 @@ public class ClientCapabilitySyncPacket implements CustomPacketPayload {
             SekCLib.LOGGER.warn("Received invalid capability count: {}", capCount);
             return new ClientCapabilitySyncPacket(playerId, Collections.emptyList());
         }
-        List<CapabilityInfo> capabilityInfoList = new ArrayList<>();
+        List<CapabilityInfo> capabilityInfoList = new ArrayList<>(capCount);
         for (int i = 0; i < capCount; i++) {
             int capId = inBuffer.readInt();
             CapabilityEntry capability = SekCLibRegistries.CAPABILITY_REGISTRY.byId(capId);

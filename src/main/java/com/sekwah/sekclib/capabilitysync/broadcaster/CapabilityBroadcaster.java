@@ -2,6 +2,7 @@ package com.sekwah.sekclib.capabilitysync.broadcaster;
 
 import com.sekwah.sekclib.SekCLib;
 import com.sekwah.sekclib.capabilitysync.CapabilityEntry;
+import com.sekwah.sekclib.capabilitysync.CapabilitySyncRegistry;
 import com.sekwah.sekclib.capabilitysync.SyncEntry;
 import com.sekwah.sekclib.capabilitysync.capability.SyncData;
 import com.sekwah.sekclib.capabilitysync.capability.SyncDataCapabilityHandler;
@@ -15,8 +16,11 @@ import com.sekwah.sekclib.registries.SekCLibRegistries;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.neoforge.attachment.AttachmentType;
+import net.neoforged.neoforge.attachment.IAttachmentHolder;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -25,14 +29,52 @@ import java.util.List;
 public class CapabilityBroadcaster {
 
     /**
+     * Checks whether the given entity currently has any registered synced capability attached.
+     *
+     * @param entity the entity to inspect
+     * @return true if at least one synced capability attachment is present on the entity
+     */
+    public static boolean hasAnySyncedCapability(LivingEntity entity) {
+        return hasAnySyncedCapability(entity, CapabilitySyncRegistry.getPlayerCapabilities());
+    }
+
+    public static boolean hasAnySyncedCapability(IAttachmentHolder holder, Collection<CapabilityEntry> capabilities) {
+        if (holder == null || capabilities == null || capabilities.isEmpty()) {
+            return false;
+        }
+        for (CapabilityEntry capabilityEntry : capabilities) {
+            AttachmentType<?> attachmentType = capabilityEntry.getAttachmentType();
+            if (attachmentType != null && holder.hasData(attachmentType)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean shouldSyncEntity(IAttachmentHolder holder, AttachmentType<SyncData> syncDataType, Collection<CapabilityEntry> capabilities) {
+        if (holder == null) {
+            return false;
+        }
+        return (syncDataType != null && holder.hasData(syncDataType)) || hasAnySyncedCapability(holder, capabilities);
+    }
+
+    /**
      * Also tick the sync trackers to make sure the data is up to date and flag what should be sent.
      *
      * @param player
      */
     public static void checkCapData(LivingEntity player) {
-        SyncData syncData = player.getData(SyncDataCapabilityHandler.SYNC_DATA.get());
+        if (player == null) {
+            return;
+        }
+        AttachmentType<SyncData> syncDataType = SyncDataCapabilityHandler.SYNC_DATA.get();
+        if (!player.hasData(syncDataType) && !hasAnySyncedCapability(player)) {
+            return;
+        }
+        SyncData syncData = player.getData(syncDataType);
         syncData.ensureTrackers(player);
         List<CapabilityTracker> capTrackers = syncData.getCapabilityTrackers();
+        boolean anyMarked = false;
         for (CapabilityTracker capTracker : capTrackers) {
             AttachmentType<?> attachmentType = capTracker.getAttachmentType();
             if (attachmentType != null && player.hasData(attachmentType)) {
@@ -40,6 +82,9 @@ public class CapabilityBroadcaster {
                 for (SyncTracker syncTracker : capTracker.getSyncTrackers()) {
                     try {
                         syncTracker.tick(data);
+                        if (syncTracker.isMarkedForSend()) {
+                            anyMarked = true;
+                        }
                     } catch (Throwable e) {
                         SekCLib.LOGGER.error("There was a problem updating a sync tracker", e);
                     }
@@ -47,18 +92,27 @@ public class CapabilityBroadcaster {
             }
         }
 
-        broadcastCapChanges(player, false);
+        if (anyMarked) {
+            broadcastCapChanges(player, false);
+        }
     }
 
     private static List<CapabilityInfo> collectEntries(LivingEntity entity, boolean returnAll) {
-        List<CapabilityInfo> capInfoList = new ArrayList<>();
-        SyncData syncData = entity.getData(SyncDataCapabilityHandler.SYNC_DATA.get());
+        if (entity == null) {
+            return Collections.emptyList();
+        }
+        AttachmentType<SyncData> syncDataType = SyncDataCapabilityHandler.SYNC_DATA.get();
+        if (!entity.hasData(syncDataType) && !hasAnySyncedCapability(entity)) {
+            return Collections.emptyList();
+        }
+        List<CapabilityInfo> capInfoList = null;
+        SyncData syncData = entity.getData(syncDataType);
         syncData.ensureTrackers(entity);
         List<CapabilityTracker> capTrackers = syncData.getCapabilityTrackers();
         for (CapabilityTracker capTracker : capTrackers) {
             CapabilityEntry capEntry = capTracker.getCapabilityEntry();
             AttachmentType<?> attachmentType = capTracker.getAttachmentType();
-            CapabilityInfo capInfo = new CapabilityInfo(SekCLibRegistries.CAPABILITY_REGISTRY.getId(capEntry), capEntry);
+            CapabilityInfo capInfo = null;
 
             if (returnAll && attachmentType != null && entity.hasData(attachmentType)) {
                 Object data = entity.getData(attachmentType);
@@ -66,11 +120,14 @@ public class CapabilityBroadcaster {
                     SyncEntry syncEntry = syncTracker.getSyncEntry();
                     Object liveValue;
                     try {
-                        liveValue = syncEntry.getGetter().invoke(data);
+                        liveValue = syncEntry.getValue(data);
                         syncTracker.markSentValue(liveValue);
                         liveValue = syncTracker.getSendValue();
                     } catch (Throwable t) {
                         liveValue = syncTracker.getSendValue();
+                    }
+                    if (capInfo == null) {
+                        capInfo = new CapabilityInfo(SekCLibRegistries.CAPABILITY_REGISTRY.getId(capEntry), capEntry);
                     }
                     ISyncTrackerData trackerData = new SyncTrackerData(syncEntry, liveValue);
                     if (syncEntry.isSyncGlobally()) {
@@ -82,6 +139,9 @@ public class CapabilityBroadcaster {
             } else {
                 for (SyncTracker syncTracker : capTracker.getSyncTrackers()) {
                     if (returnAll || syncTracker.isMarkedForSend()) {
+                        if (capInfo == null) {
+                            capInfo = new CapabilityInfo(SekCLibRegistries.CAPABILITY_REGISTRY.getId(capEntry), capEntry);
+                        }
                         if (syncTracker.getSyncEntry().isSyncGlobally()) {
                             capInfo.changedEntries.add(syncTracker);
                         } else {
@@ -91,11 +151,14 @@ public class CapabilityBroadcaster {
                 }
             }
 
-            if (!capInfo.changedEntries.isEmpty() || !capInfo.changedPrivateEntries.isEmpty()) {
+            if (capInfo != null) {
+                if (capInfoList == null) {
+                    capInfoList = new ArrayList<>();
+                }
                 capInfoList.add(capInfo);
             }
         }
-        return capInfoList;
+        return capInfoList != null ? capInfoList : Collections.emptyList();
     }
 
     /**
@@ -112,9 +175,15 @@ public class CapabilityBroadcaster {
         }
 
         boolean hasPrivate = false;
+        boolean hasGlobal = false;
         for (CapabilityInfo info : dataToSend) {
             if (!info.changedPrivateEntries.isEmpty()) {
                 hasPrivate = true;
+            }
+            if (!info.changedEntries.isEmpty()) {
+                hasGlobal = true;
+            }
+            if (hasPrivate && hasGlobal) {
                 break;
             }
         }
@@ -124,17 +193,19 @@ public class CapabilityBroadcaster {
             ClientCapabilitySyncPacket selfData = new ClientCapabilitySyncPacket(entity, dataToSend, true);
             if (!selfData.capabilityData.isEmpty()) {
                 SekCPacketHandler.sendToPlayer(selfData, serverPlayer);
+                // Spectators currently viewing this player through their camera also receive private data
+                // so the target's UI can be rendered from the spectator's perspective.
+                for (ServerPlayer spectator : getSpectators(serverPlayer)) {
+                    SekCPacketHandler.sendToPlayer(selfData, spectator);
+                }
             }
-            ClientCapabilitySyncPacket forOthers = new ClientCapabilitySyncPacket(entity, dataToSend, false);
-            if (!forOthers.capabilityData.isEmpty()) {
-                SekCPacketHandler.sendToTracking(forOthers, entity);
+            if (hasGlobal) {
+                ClientCapabilitySyncPacket forOthers = new ClientCapabilitySyncPacket(entity, dataToSend, false);
+                if (!forOthers.capabilityData.isEmpty()) {
+                    SekCPacketHandler.sendToTracking(forOthers, entity);
+                }
             }
-            // Spectators currently viewing this player through their camera also receive private data
-            // so the target's UI can be rendered from the spectator's perspective.
-            for (ServerPlayer spectator : getSpectators(serverPlayer)) {
-                SekCPacketHandler.sendToPlayer(new ClientCapabilitySyncPacket(entity, dataToSend, true), spectator);
-            }
-        } else {
+        } else if (hasGlobal) {
             // When only globally visible capabilities change, send a single packet to TRACKING_ENTITY_AND_SELF
             ClientCapabilitySyncPacket packet = new ClientCapabilitySyncPacket(entity, dataToSend, false);
             if (!packet.capabilityData.isEmpty()) {
@@ -163,13 +234,19 @@ public class CapabilityBroadcaster {
      * @return the spectating players, never null
      */
     public static List<ServerPlayer> getSpectators(ServerPlayer target) {
-        List<ServerPlayer> spectators = new ArrayList<>();
+        if (target == null) {
+            return Collections.emptyList();
+        }
+        List<ServerPlayer> spectators = null;
         for (ServerPlayer other : target.level().players()) {
             if (other != target && other.isSpectator() && other.getCamera() == target) {
+                if (spectators == null) {
+                    spectators = new ArrayList<>();
+                }
                 spectators.add(other);
             }
         }
-        return spectators;
+        return spectators != null ? spectators : Collections.emptyList();
     }
 
     /**

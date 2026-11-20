@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 public class CapabilitySyncRegistry {
 
     private static final Map<Type, SyncTrackerSerializer> SYNC_TRACKER_SERIALIZER = new HashMap<>();
+    private static volatile List<CapabilityEntry> cachedCapabilities;
 
     public static void registerPlayerCap(Identifier resourceSyncName, AttachmentType<?> attachmentType, Class<?> clazz) {
         registerPlayerCap(resourceSyncName, () -> attachmentType, clazz, null);
@@ -51,6 +52,7 @@ public class CapabilitySyncRegistry {
         } else {
             Registry.register(SekCLibRegistries.CAPABILITY_REGISTRY, resourceSyncName, capabilityEntry);
         }
+        cachedCapabilities = null;
         List<String> errors = new ArrayList<>();
         int trackerId = 0;
         for (Field field : values) {
@@ -108,6 +110,12 @@ public class CapabilitySyncRegistry {
      * @return list of capabilities for syncing later
      */
     public static Collection<CapabilityEntry> getPlayerCapabilities() {
-        return SekCLibRegistries.CAPABILITY_REGISTRY.stream().toList();
+        List<CapabilityEntry> cached = cachedCapabilities;
+        int registrySize = SekCLibRegistries.CAPABILITY_REGISTRY.size();
+        if (cached == null || cached.size() != registrySize) {
+            cached = SekCLibRegistries.CAPABILITY_REGISTRY.stream().toList();
+            cachedCapabilities = cached;
+        }
+        return cached;
     }
 }

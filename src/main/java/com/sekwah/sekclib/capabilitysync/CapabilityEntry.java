@@ -13,6 +13,7 @@ public class CapabilityEntry {
     private final Identifier resourceSyncName;
     private final Supplier<? extends AttachmentType<?>> attachmentType;
     private final Class<?> clazz;
+    private volatile AttachmentType<?> resolvedAttachmentType;
 
     private final List<SyncEntry> syncEntries = new ArrayList<>();
 
@@ -33,7 +34,14 @@ public class CapabilityEntry {
     }
 
     public AttachmentType<?> getAttachmentType() {
-        return attachmentType.get();
+        AttachmentType<?> cached = this.resolvedAttachmentType;
+        if (cached == null && this.attachmentType != null) {
+            cached = this.attachmentType.get();
+            if (cached != null) {
+                this.resolvedAttachmentType = cached;
+            }
+        }
+        return cached;
     }
 
     public List<SyncEntry> getSyncEntries() {

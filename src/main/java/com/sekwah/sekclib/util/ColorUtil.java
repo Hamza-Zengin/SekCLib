@@ -54,8 +54,7 @@ public class ColorUtil {
     }
 
     public static int colorToInt(Color color) {
-        TextColor mcColor = toMCColor(color);
-        return mcColor != null ? mcColor.getValue() : (color.getRGB() & 0xFFFFFF);
+        return color.getRGB() & 0xFFFFFF;
     }
 
     /**
