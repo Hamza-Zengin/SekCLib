@@ -32,7 +32,11 @@ public class IdentifierSetSyncTracker implements SyncTrackerSerializer<Set<Ident
     @Override
     public Set<Identifier> decode(FriendlyByteBuf inBuffer) {
         int size = inBuffer.readInt();
-        if (size <= 0 || size > MAX_ELEMENTS) {
+        if (size < 0 || size > MAX_ELEMENTS) {
+            inBuffer.skipBytes(inBuffer.readableBytes());
+            return new HashSet<>();
+        }
+        if (size == 0) {
             return new HashSet<>();
         }
         Set<Identifier> set = HashSet.newHashSet(size);

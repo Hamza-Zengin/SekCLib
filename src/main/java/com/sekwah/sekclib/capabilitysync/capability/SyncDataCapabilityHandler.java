@@ -96,7 +96,9 @@ public class SyncDataCapabilityHandler {
     @SubscribeEvent
     public static void playerClone(PlayerEvent.Clone event) {
         if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof ServerPlayer serverPlayer) {
-            serverPlayer.getData(SYNC_DATA.get()).ensureTrackers(serverPlayer);
+            if (CapabilityBroadcaster.hasAnySyncedCapability(serverPlayer)) {
+                serverPlayer.getData(SYNC_DATA.get()).ensureTrackers(serverPlayer);
+            }
         }
     }
 

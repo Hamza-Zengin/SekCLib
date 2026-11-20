@@ -9,6 +9,7 @@ import com.sekwah.sekclib.capabilitysync.capability.SyncData;
 import com.sekwah.sekclib.capabilitysync.capability.SyncDataCapabilityHandler;
 import com.sekwah.sekclib.capabilitysync.tracker.CapabilityTracker;
 import com.sekwah.sekclib.capabilitysync.tracker.SyncTracker;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.FunctionGameTestInstance;
@@ -18,10 +19,15 @@ import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.GameType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.attachment.AttachmentType;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import net.neoforged.neoforge.registries.RegisterEvent;
@@ -60,6 +66,8 @@ public class SekCLibGameTests {
             ResourceKey.create(Registries.TEST_FUNCTION, Identifier.fromNamespaceAndPath(SekCLib.MOD_ID, "tracker_sync"));
     private static final ResourceKey<Consumer<GameTestHelper>> FN_MIN_TICKS_THROTTLE =
             ResourceKey.create(Registries.TEST_FUNCTION, Identifier.fromNamespaceAndPath(SekCLib.MOD_ID, "min_ticks_throttle"));
+    private static final ResourceKey<Consumer<GameTestHelper>> FN_LIVING_ENTITY_NO_SYNC_DATA =
+            ResourceKey.create(Registries.TEST_FUNCTION, Identifier.fromNamespaceAndPath(SekCLib.MOD_ID, "living_entity_no_sync_data"));
 
     public static boolean isGameTestEnabled() {
         return Boolean.getBoolean("neoforge.enableGameTest")
@@ -89,6 +97,7 @@ public class SekCLibGameTests {
             helper.register(FN_SPECTATOR_LOOKUP, SekCLibGameTests::testSpectatorLookup);
             helper.register(FN_TRACKER_SYNC, SekCLibGameTests::testTrackerSync);
             helper.register(FN_MIN_TICKS_THROTTLE, SekCLibGameTests::testMinTicksThrottle);
+            helper.register(FN_LIVING_ENTITY_NO_SYNC_DATA, SekCLibGameTests::testLivingEntityNoSyncData);
         });
     }
 
@@ -108,6 +117,10 @@ public class SekCLibGameTests {
         event.registerTest(
                 Identifier.fromNamespaceAndPath(SekCLib.MOD_ID, "min_ticks_throttle"),
                 new FunctionGameTestInstance(FN_MIN_TICKS_THROTTLE, new TestData<>(env, EMPTY_STRUCTURE, 40, 0, true))
+        );
+        event.registerTest(
+                Identifier.fromNamespaceAndPath(SekCLib.MOD_ID, "living_entity_no_sync_data"),
+                new FunctionGameTestInstance(FN_LIVING_ENTITY_NO_SYNC_DATA, new TestData<>(env, EMPTY_STRUCTURE, 40, 0, true))
         );
     }
 
@@ -170,6 +183,14 @@ public class SekCLibGameTests {
         helper.assertValueEqual(privateTracker.getSendValue(), 42, "privateChakra sendValue");
         helper.assertValueEqual(globalTracker.getSendValue(), 7, "globalFlag sendValue");
 
+        // StartTracking broadcastCapToPlayer must only collect global entries and must not mark pending private trackers sent
+        ServerPlayer observer = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
+        observer.connection = target.connection;
+        helper.getLevel().addNewPlayer(observer);
+        CapabilityBroadcaster.broadcastCapToPlayer(target, observer);
+        helper.assertTrue(privateTracker.isMarkedForSend(), "StartTracking must not clear pending private tracker dirty flag");
+        helper.assertValueEqual(privateTracker.getSendValue(), 42, "privateChakra sendValue must remain intact");
+
         helper.succeed();
     }
 
@@ -203,6 +224,30 @@ public class SekCLibGameTests {
         }
         helper.assertTrue(throttled.isMarkedForSend(), "throttledValue should mark for send after minTicks=3");
 
+        helper.succeed();
+    }
+
+    private static void testLivingEntityNoSyncData(GameTestHelper helper) {
+        LivingEntity pig = EntityTypes.PIG.create(helper.getLevel(), EntitySpawnReason.COMMAND);
+        helper.assertTrue(pig != null, "Vanilla Pig entity must instantiate");
+        BlockPos pos = helper.absolutePos(new BlockPos(0, 1, 0));
+        pig.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+        helper.getLevel().addFreshEntity(pig);
+
+        helper.assertFalse(pig.hasData(SyncDataCapabilityHandler.SYNC_DATA.get()),
+                "Vanilla non-player LivingEntity must not start with SyncData attached");
+
+        for (int i = 0; i < 5; i++) {
+            pig.tick();
+            NeoForge.EVENT_BUS.post(new EntityTickEvent.Post(pig));
+            CapabilityBroadcaster.checkCapData(pig);
+        }
+        CapabilityBroadcaster.broadcastCapChanges(pig, true);
+
+        helper.assertFalse(pig.hasData(SyncDataCapabilityHandler.SYNC_DATA.get()),
+                "Vanilla non-player LivingEntity must not receive SyncData attachment after ticks");
+
+        pig.discard();
         helper.succeed();
     }
 
