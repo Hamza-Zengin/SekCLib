@@ -9,13 +9,16 @@ import com.sekwah.sekclib.capabilitysync.tracker.SyncTracker;
 import com.sekwah.sekclib.capabilitysync.tracker.implemented.IntSyncTracker;
 import com.sekwah.sekclib.capabilitysync.tracker.implemented.StringSetSyncTracker;
 import net.minecraft.resources.Identifier;
-import net.neoforged.neoforge.attachment.AttachmentHolder;
 import net.neoforged.neoforge.attachment.AttachmentType;
+import net.neoforged.neoforge.attachment.IAttachmentHolder;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Proxy;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -146,6 +149,27 @@ public class CapabilityBroadcasterTest {
         assertEquals(99, tracker.getSendValue());
     }
 
+    private static IAttachmentHolder createInMemoryHolder() {
+        Map<AttachmentType<?>, Object> attachments = new IdentityHashMap<>();
+        return (IAttachmentHolder) Proxy.newProxyInstance(
+                IAttachmentHolder.class.getClassLoader(),
+                new Class<?>[]{IAttachmentHolder.class},
+                (proxy, method, args) -> {
+                    String name = method.getName();
+                    if ("hasData".equals(name) && args != null && args.length == 1) {
+                        return attachments.containsKey(args[0]);
+                    }
+                    if ("getData".equals(name) && args != null && args.length == 1) {
+                        return attachments.get(args[0]);
+                    }
+                    if ("setData".equals(name) && args != null && args.length == 2) {
+                        return attachments.put((AttachmentType<?>) args[0], args[1]);
+                    }
+                    return null;
+                }
+        );
+    }
+
     @Test
     void testBroadcasterSkipsSyncDataAllocationWithoutSyncedCapability() {
         assertFalse(CapabilityBroadcaster.hasAnySyncedCapability(null));
@@ -163,20 +187,20 @@ public class CapabilityBroadcasterTest {
         List<CapabilityEntry> capabilities = List.of(capEntry);
 
         // Entity without any synced capability or SyncData must not get SyncData allocated
-        AttachmentHolder vanillaEntityHolder = new AttachmentHolder() {};
+        IAttachmentHolder vanillaEntityHolder = createInMemoryHolder();
         assertFalse(CapabilityBroadcaster.hasAnySyncedCapability(vanillaEntityHolder, capabilities));
         assertFalse(CapabilityBroadcaster.shouldSyncEntity(vanillaEntityHolder, syncDataType, capabilities));
         assertFalse(vanillaEntityHolder.hasData(syncDataType), "Vanilla entity without synced caps must not get SyncData");
 
         // Entity that has a registered synced capability must be eligible for syncing
-        vanillaEntityHolder.getData(capType);
+        vanillaEntityHolder.setData(capType, new DummyCapability());
         assertTrue(CapabilityBroadcaster.hasAnySyncedCapability(vanillaEntityHolder, capabilities));
         assertTrue(CapabilityBroadcaster.shouldSyncEntity(vanillaEntityHolder, syncDataType, capabilities));
         assertFalse(vanillaEntityHolder.hasData(syncDataType), "Capability detection itself must not allocate SyncData");
 
         // Entity that already holds SyncData remains eligible
-        AttachmentHolder existingSyncHolder = new AttachmentHolder() {};
-        existingSyncHolder.getData(syncDataType);
+        IAttachmentHolder existingSyncHolder = createInMemoryHolder();
+        existingSyncHolder.setData(syncDataType, new SyncData());
         assertFalse(CapabilityBroadcaster.hasAnySyncedCapability(existingSyncHolder, capabilities));
         assertTrue(CapabilityBroadcaster.shouldSyncEntity(existingSyncHolder, syncDataType, capabilities));
     }
