@@ -89,6 +89,11 @@ public class ClientCapabilitySyncPacket implements CustomPacketPayload {
      * @return
      */
     public static List<ISyncTrackerData> decodeSyncTrackers(CapabilityEntry capability, FriendlyByteBuf inBuffer) {
+        if (inBuffer.readableBytes() < 4) {
+            SekCLib.LOGGER.warn("Received truncated sync tracker header ({} bytes)", inBuffer.readableBytes());
+            inBuffer.skipBytes(inBuffer.readableBytes());
+            return Collections.emptyList();
+        }
         int trackerCount = inBuffer.readInt();
         if (trackerCount < 0 || trackerCount > MAX_SYNC_ENTRIES) {
             SekCLib.LOGGER.warn("Received invalid tracker count: {}", trackerCount);
@@ -97,8 +102,10 @@ public class ClientCapabilitySyncPacket implements CustomPacketPayload {
         }
         List<ISyncTrackerData> syncTrackerDataList = new ArrayList<>(trackerCount);
         for (int i = 0; i < trackerCount; i++) {
-            if (!inBuffer.isReadable()) {
-                break;
+            if (inBuffer.readableBytes() < 2) {
+                SekCLib.LOGGER.warn("Received truncated sync tracker entry ({} bytes remaining)", inBuffer.readableBytes());
+                inBuffer.skipBytes(inBuffer.readableBytes());
+                return syncTrackerDataList;
             }
             int trackerId = inBuffer.readUnsignedByte();
             boolean hasData = inBuffer.readBoolean();
@@ -108,7 +115,16 @@ public class ClientCapabilitySyncPacket implements CustomPacketPayload {
                 return syncTrackerDataList;
             }
             SyncEntry tracker = capability.getSyncEntries().get(trackerId);
-            Object data = hasData ? tracker.getSerializer().decode(inBuffer) : null;
+            Object data = null;
+            if (hasData) {
+                try {
+                    data = tracker.getSerializer().decode(inBuffer);
+                } catch (IndexOutOfBoundsException | IllegalArgumentException e) {
+                    SekCLib.LOGGER.warn("Failed to decode sync tracker {} payload: {}", trackerId, e.getMessage());
+                    inBuffer.skipBytes(inBuffer.readableBytes());
+                    return syncTrackerDataList;
+                }
+            }
             syncTrackerDataList.add(new SyncTrackerData(tracker, data));
         }
         return syncTrackerDataList;
@@ -133,6 +149,11 @@ public class ClientCapabilitySyncPacket implements CustomPacketPayload {
     }
 
     public static ClientCapabilitySyncPacket decode(FriendlyByteBuf inBuffer, java.util.function.IntFunction<CapabilityEntry> capabilityLookup) {
+        if (inBuffer.readableBytes() < 8) {
+            SekCLib.LOGGER.warn("Received truncated capability sync packet header ({} bytes)", inBuffer.readableBytes());
+            inBuffer.skipBytes(inBuffer.readableBytes());
+            return new ClientCapabilitySyncPacket(-1, Collections.emptyList());
+        }
         int playerId = inBuffer.readInt();
         int capCount = inBuffer.readInt();
         if (capCount < 0 || capCount > MAX_SYNC_ENTRIES) {
@@ -142,7 +163,9 @@ public class ClientCapabilitySyncPacket implements CustomPacketPayload {
         }
         List<CapabilityInfo> capabilityInfoList = new ArrayList<>(capCount);
         for (int i = 0; i < capCount; i++) {
-            if (!inBuffer.isReadable()) {
+            if (inBuffer.readableBytes() < 4) {
+                SekCLib.LOGGER.warn("Received truncated capability entry ({} bytes remaining)", inBuffer.readableBytes());
+                inBuffer.skipBytes(inBuffer.readableBytes());
                 break;
             }
             int capId = inBuffer.readInt();

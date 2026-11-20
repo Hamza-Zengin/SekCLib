@@ -215,4 +215,75 @@ public class PacketDecodeBoundsTest {
         assertSame(attachment, entry.getAttachmentType());
         assertEquals(Object.class, entry.getCapabilityClass());
     }
+
+    @Test
+    void testTruncatedPacketHeaderHandledSafely() {
+        for (int len : new int[]{0, 3, 7}) {
+            FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+            buf.writeBytes(new byte[len]);
+
+            ClientCapabilitySyncPacket packet = assertDoesNotThrow(
+                    () -> ClientCapabilitySyncPacket.decode(buf, id -> null));
+            assertNotNull(packet);
+            assertEquals(-1, packet.getEntityId());
+            assertTrue(packet.capabilityData.isEmpty());
+            assertEquals(0, buf.readableBytes());
+        }
+    }
+
+    @Test
+    void testTruncatedCapabilityEntryHandledSafely() throws Exception {
+        CapabilityEntry testEntry = createTestCapabilityEntry();
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeInt(77); // entityId
+        buf.writeInt(1);  // capCount
+        buf.writeShort(1); // only 2 bytes remaining instead of 4-byte capId
+
+        ClientCapabilitySyncPacket packet = assertDoesNotThrow(
+                () -> ClientCapabilitySyncPacket.decode(buf, id -> testEntry));
+        assertNotNull(packet);
+        assertEquals(77, packet.getEntityId());
+        assertTrue(packet.capabilityData.isEmpty());
+        assertEquals(0, buf.readableBytes());
+    }
+
+    @Test
+    void testTruncatedSyncTrackerHeaderHandledSafely() throws Exception {
+        CapabilityEntry testEntry = createTestCapabilityEntry();
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeShort(1); // only 2 bytes instead of 4-byte trackerCount
+
+        List<ISyncTrackerData> trackers = assertDoesNotThrow(
+                () -> ClientCapabilitySyncPacket.decodeSyncTrackers(testEntry, buf));
+        assertTrue(trackers.isEmpty());
+        assertEquals(0, buf.readableBytes());
+    }
+
+    @Test
+    void testTruncatedSyncTrackerEntryHandledSafely() throws Exception {
+        CapabilityEntry testEntry = createTestCapabilityEntry();
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeInt(1);  // trackerCount
+        buf.writeByte(0); // only 1 byte remaining instead of 2 (trackerId + hasData)
+
+        List<ISyncTrackerData> trackers = assertDoesNotThrow(
+                () -> ClientCapabilitySyncPacket.decodeSyncTrackers(testEntry, buf));
+        assertTrue(trackers.isEmpty());
+        assertEquals(0, buf.readableBytes());
+    }
+
+    @Test
+    void testTruncatedSyncTrackerPayloadHandledSafely() throws Exception {
+        CapabilityEntry testEntry = createTestCapabilityEntry();
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeInt(1);       // trackerCount
+        buf.writeByte(0);      // trackerId 0 -> IntSyncTracker
+        buf.writeBoolean(true); // hasData = true
+        buf.writeShort(0x1234); // only 2 bytes instead of 4-byte int
+
+        List<ISyncTrackerData> trackers = assertDoesNotThrow(
+                () -> ClientCapabilitySyncPacket.decodeSyncTrackers(testEntry, buf));
+        assertTrue(trackers.isEmpty());
+        assertEquals(0, buf.readableBytes());
+    }
 }
