@@ -30,21 +30,13 @@ public class PacketDecodeBoundsTest {
         public Set<String> tags = new HashSet<>();
     }
 
-    private static CapabilityEntry registeredCapEntry;
-    private static int registeredCapId = -1;
-
-    private static synchronized int ensureRegisteredTestCapability() throws Exception {
-        if (registeredCapId < 0) {
-            Identifier id = Identifier.fromNamespaceAndPath("sekclib", "packet_decode_bounds_test_cap");
-            CapabilityEntry entry = new CapabilityEntry(id, () -> null, DummyPacketCap.class);
-            entry.addSyncEntry(new SyncEntry("value", DummyPacketCap.class.getField("value"), 0, 0, true, new IntSyncTracker()));
-            entry.addSyncEntry(new SyncEntry("ids", DummyPacketCap.class.getField("ids"), 0, 1, true, new IdentifierSetSyncTracker()));
-            entry.addSyncEntry(new SyncEntry("tags", DummyPacketCap.class.getField("tags"), 0, 2, true, new StringSetSyncTracker()));
-            Registry.register(SekCLibRegistries.CAPABILITY_REGISTRY, id, entry);
-            registeredCapEntry = entry;
-            registeredCapId = SekCLibRegistries.CAPABILITY_REGISTRY.getId(entry);
-        }
-        return registeredCapId;
+    private static CapabilityEntry createTestCapabilityEntry() throws Exception {
+        Identifier id = Identifier.fromNamespaceAndPath("sekclib", "packet_decode_bounds_test_cap");
+        CapabilityEntry entry = new CapabilityEntry(id, () -> null, DummyPacketCap.class);
+        entry.addSyncEntry(new SyncEntry("value", DummyPacketCap.class.getField("value"), 0, 0, true, new IntSyncTracker()));
+        entry.addSyncEntry(new SyncEntry("ids", DummyPacketCap.class.getField("ids"), 0, 1, true, new IdentifierSetSyncTracker()));
+        entry.addSyncEntry(new SyncEntry("tags", DummyPacketCap.class.getField("tags"), 0, 2, true, new StringSetSyncTracker()));
+        return entry;
     }
 
     @Test
@@ -95,14 +87,15 @@ public class PacketDecodeBoundsTest {
 
     @Test
     void testInvalidTrackerCountDrainsBufferDirectlyAndInMultiCapPacket() throws Exception {
-        int capId = ensureRegisteredTestCapability();
+        CapabilityEntry testEntry = createTestCapabilityEntry();
+        int capId = 1;
 
         // Direct decodeSyncTrackers negative trackerCount
         FriendlyByteBuf negBuf = new FriendlyByteBuf(Unpooled.buffer());
         negBuf.writeInt(-4);
         negBuf.writeInt(12345);
         List<ISyncTrackerData> negTrackers = assertDoesNotThrow(
-                () -> ClientCapabilitySyncPacket.decodeSyncTrackers(registeredCapEntry, negBuf));
+                () -> ClientCapabilitySyncPacket.decodeSyncTrackers(testEntry, negBuf));
         assertTrue(negTrackers.isEmpty());
         assertEquals(0, negBuf.readableBytes());
 
@@ -111,7 +104,7 @@ public class PacketDecodeBoundsTest {
         highBuf.writeInt(10000);
         highBuf.writeByte(0x55);
         List<ISyncTrackerData> highTrackers = assertDoesNotThrow(
-                () -> ClientCapabilitySyncPacket.decodeSyncTrackers(registeredCapEntry, highBuf));
+                () -> ClientCapabilitySyncPacket.decodeSyncTrackers(testEntry, highBuf));
         assertTrue(highTrackers.isEmpty());
         assertEquals(0, highBuf.readableBytes());
 
@@ -128,7 +121,7 @@ public class PacketDecodeBoundsTest {
         multiBuf.writeInt(77);
 
         ClientCapabilitySyncPacket packet = assertDoesNotThrow(
-                () -> ClientCapabilitySyncPacket.STREAM_CODEC.decode(multiBuf));
+                () -> ClientCapabilitySyncPacket.decode(multiBuf, id -> id == capId ? testEntry : null));
         assertNotNull(packet);
         assertEquals(321, packet.getEntityId());
         assertTrue(packet.capabilityData.isEmpty());
@@ -137,7 +130,8 @@ public class PacketDecodeBoundsTest {
 
     @Test
     void testOutOfBoundsTrackerIdAndNullCapabilityDrainBuffer() throws Exception {
-        int capId = ensureRegisteredTestCapability();
+        CapabilityEntry testEntry = createTestCapabilityEntry();
+        int capId = 1;
 
         // capability == null inside decodeSyncTrackers
         FriendlyByteBuf nullCapBuf = new FriendlyByteBuf(Unpooled.buffer());
@@ -162,7 +156,7 @@ public class PacketDecodeBoundsTest {
         oobBuf.writeInt(capId); // trailing cap 1
 
         ClientCapabilitySyncPacket packet = assertDoesNotThrow(
-                () -> ClientCapabilitySyncPacket.STREAM_CODEC.decode(oobBuf));
+                () -> ClientCapabilitySyncPacket.decode(oobBuf, id -> id == capId ? testEntry : null));
         assertNotNull(packet);
         assertEquals(456, packet.getEntityId());
         assertTrue(packet.capabilityData.isEmpty());

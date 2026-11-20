@@ -129,6 +129,10 @@ public class ClientCapabilitySyncPacket implements CustomPacketPayload {
     }
 
     public static ClientCapabilitySyncPacket decode(FriendlyByteBuf inBuffer) {
+        return decode(inBuffer, SekCLibRegistries.CAPABILITY_REGISTRY::byId);
+    }
+
+    public static ClientCapabilitySyncPacket decode(FriendlyByteBuf inBuffer, java.util.function.IntFunction<CapabilityEntry> capabilityLookup) {
         int playerId = inBuffer.readInt();
         int capCount = inBuffer.readInt();
         if (capCount < 0 || capCount > MAX_SYNC_ENTRIES) {
@@ -142,7 +146,7 @@ public class ClientCapabilitySyncPacket implements CustomPacketPayload {
                 break;
             }
             int capId = inBuffer.readInt();
-            CapabilityEntry capability = SekCLibRegistries.CAPABILITY_REGISTRY.byId(capId);
+            CapabilityEntry capability = capabilityLookup != null ? capabilityLookup.apply(capId) : null;
             if (capability == null) {
                 SekCLib.LOGGER.warn("Received capability sync packet for unregistered capability id: {}", capId);
                 inBuffer.skipBytes(inBuffer.readableBytes());
