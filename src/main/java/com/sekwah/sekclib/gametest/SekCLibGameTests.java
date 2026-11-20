@@ -20,7 +20,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.GameType;
 import net.neoforged.bus.api.IEventBus;
@@ -228,7 +228,7 @@ public class SekCLibGameTests {
     }
 
     private static void testLivingEntityNoSyncData(GameTestHelper helper) {
-        LivingEntity pig = EntityType.PIG.create(helper.getLevel(), EntitySpawnReason.COMMAND);
+        LivingEntity pig = EntityTypes.PIG.create(helper.getLevel(), EntitySpawnReason.COMMAND);
         helper.assertTrue(pig != null, "Vanilla Pig entity must instantiate");
         BlockPos pos = helper.absolutePos(new BlockPos(0, 1, 0));
         pig.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
