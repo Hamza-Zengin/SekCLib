@@ -149,6 +149,7 @@ tasks.named('assemble').configure {
 publishing {
     publications {
         mavenJava(MavenPublication) {
+            artifactId = 'sekclib'
             artifact tasks.named('jar')
             artifact srcJar
         }
@@ -156,7 +157,7 @@ publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/Hamza-Zengin/SekCLib")
+            url = uri("https://maven.pkg.github.com/hamza-zengin/sekclib")
             credentials {
                 username = System.getenv("GITHUB_ACTOR") ?: project.findProperty("gpr.user") ?: ""
                 password = System.getenv("GITHUB_TOKEN") ?: project.findProperty("gpr.key") ?: ""

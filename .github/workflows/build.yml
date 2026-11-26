@@ -45,7 +45,15 @@ jobs:
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew publishMavenJavaPublicationToGitHubPackagesRepository -PisRelease=true
+        run: |
+          VERSION=$(tr -d '[:space:]' < version.txt)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -u "${GITHUB_ACTOR}:${GITHUB_TOKEN}" \
+            "https://maven.pkg.github.com/hamza-zengin/sekclib/com/sekwah/sekclib/${VERSION}/sekclib-${VERSION}.pom")
+          if [ "$STATUS" = "200" ]; then
+            echo "SekCLib ${VERSION} is already published to GitHub Packages; skipping."
+          else
+            ./gradlew publishMavenJavaPublicationToGitHubPackagesRepository -PisRelease=true
+          fi
 
       - name: Upload Playable Mod Jar
         uses: actions/upload-artifact@v4
