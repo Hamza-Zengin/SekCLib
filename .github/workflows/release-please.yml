@@ -8,6 +8,7 @@ name: release-please
 permissions:
   contents: write
   pull-requests: write
+  packages: write
 
 jobs:
   release-please:
@@ -52,6 +53,8 @@ jobs:
           CURSE_API: ${{ secrets.CURSE_API }}
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IS_RELEASE: true
         run: |
           # Build
