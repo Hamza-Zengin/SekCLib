@@ -47,7 +47,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=$(tr -d '[:space:]' < version.txt)
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -u "${GITHUB_ACTOR}:${GITHUB_TOKEN}" \
+          STATUS=$(curl -sL -o /dev/null -w "%{http_code}" -u "${GITHUB_ACTOR}:${GITHUB_TOKEN}" \
             "https://maven.pkg.github.com/hamza-zengin/sekclib/com/sekwah/sekclib/${VERSION}/sekclib-${VERSION}.pom")
           if [ "$STATUS" = "200" ]; then
             echo "SekCLib ${VERSION} is already published to GitHub Packages; skipping."
