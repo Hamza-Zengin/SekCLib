@@ -122,7 +122,7 @@ dependencies {
 repositories {
     maven {
         name = "GitHubPackages"
-        url = uri("https://maven.pkg.github.com/Hamza-Zengin/SekCLib")
+        url = uri("https://maven.pkg.github.com/hamza-zengin/sekclib")
         credentials {
             username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
             password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
@@ -131,7 +131,7 @@ repositories {
 }
 
 dependencies {
-    implementation "com.sekwah:SekCLib:0.1.0"
+    implementation "com.sekwah:sekclib:0.1.0"
 }
 ```
 
